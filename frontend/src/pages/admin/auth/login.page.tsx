@@ -32,6 +32,12 @@ export function LoginPage() {
     }
 
     const onSubmit = (data: z.infer<typeof loginSchema>) => {
+        // TODO apenas para teste.
+        if (data.login !== "01811863" || data.password !== "123456") {
+            form.setError("password", { message: "Matrícula ou senha incorretas" });
+            return;
+        }
+
         login({ login: data.login, password: data.password }, "fake-token");
         console.log(data);
     };
@@ -62,7 +68,7 @@ export function LoginPage() {
                     <Controller
                         name="password"
                         control={form.control}
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                             <Field>
                                 <FieldLabel htmlFor="form-password">Senha</FieldLabel>
                                 <Input
@@ -71,6 +77,7 @@ export function LoginPage() {
                                     autoComplete="current-password"
                                     type="password"
                                 ></Input>
+                                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                             </Field>
                         )}
                     ></Controller>
