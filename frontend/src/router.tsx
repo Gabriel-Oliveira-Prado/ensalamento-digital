@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AuthLayout } from "./layouts/auth.layout";
 import { RootLayout } from "./layouts/root.layout";
-import { RegisterPage } from "./pages/admin/auth/register.page";
+import { LoginPage } from "./pages/admin/auth/login.page";
 import { HomePage } from "./pages/admin/home.page";
 import { PainelTvPage } from "./pages/tv/painel.page";
 
@@ -25,12 +25,8 @@ export const router = createBrowserRouter([
                         element: <AuthLayout />,
                         children: [
                             {
-                                path: "register",
-                                element: <RegisterPage />,
-                            },
-                            {
-                                path: "login",
-                                element: <div>Login</div>,
+                                path: "auth",
+                                element: <LoginPage />,
                             },
                         ],
                     },

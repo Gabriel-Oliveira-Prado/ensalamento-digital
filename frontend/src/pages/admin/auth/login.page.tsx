@@ -18,8 +18,9 @@ const loginSchema = z.object({
     password: z.string().min(1),
 });
 
-export function RegisterPage() {
+export function LoginPage() {
     const token = useAuthStore((s) => s.token);
+    const login = useAuthStore((s) => s.login);
 
     const form = useForm<z.infer<typeof loginSchema>>({
         mode: "onChange",
@@ -30,13 +31,18 @@ export function RegisterPage() {
         return <Navigate to={"/admin"} replace />;
     }
 
+    const onSubmit = (data: z.infer<typeof loginSchema>) => {
+        login({ login: data.login, password: data.password }, "fake-token");
+        console.log(data);
+    };
+
     return (
         <FormProvider {...form}>
             <CardHeader>
                 <CardTitle>Login</CardTitle>
             </CardHeader>
             <CardContent>
-                <form onSubmit={form.handleSubmit(console.log)} className="gap-2 space-y-4 py-4" id="form">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="gap-2 space-y-4 py-4" id="form">
                     <Controller
                         name="login"
                         control={form.control}
@@ -70,7 +76,7 @@ export function RegisterPage() {
                     ></Controller>
                 </form>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="bg-transparent">
                 <Button type="submit" form="form" disabled={!form.formState.isValid} className="flex-1">
                     Entrar
                 </Button>
