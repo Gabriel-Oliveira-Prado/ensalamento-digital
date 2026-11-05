@@ -204,6 +204,5 @@ export {
     ToastProvider,
     ToastTitle,
     ToastViewport,
-    useToastManager
+    useToastManager,
 };
-
