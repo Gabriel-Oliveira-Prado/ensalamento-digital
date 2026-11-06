@@ -31,25 +31,30 @@ export function LoginPage() {
 }
 
 import logo from "@/assets/dark.svg";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 function Sidebar() {
     return (
         <div className="bg-blue-nassau min-h-screen flex-1">
-            <div className="mx-auto flex h-full w-full max-w-130 flex-col justify-between px-8 py-16">
-                <div className="w-50">
-                    <img src={logo} alt="Logo uninassau branca" />
-                </div>
-                <div className="max-w-80 space-y-2">
-                    <h1 className="font-heading text-4xl font-bold text-white">
-                        Ensalamento
-                        <br />
-                        Digital
-                    </h1>
-                    <p className="text-foreground-nassau font-light">
-                        Uma única fonte de verdade sobre qual turma está em qual sala.
-                    </p>
+            <div className="mx-auto flex h-full flex-col justify-between px-16 py-16">
+                <div className="space-y-16">
+                    <div className="w-72">
+                        <img src={logo} alt="Logo uninassau branca" />
+                    </div>
+                    <div className="space-y-4">
+                        <div className="bg-red-nassau h-1.25 w-14 rounded-full" />
+                        <div>
+                            <h1 className="font-heading text-[40px] leading-none font-bold text-white">
+                                Ensalamento sem conflitos.
+                            </h1>
+                            <h1 className="font-heading text-gold-nassau text-[40px] font-bold">
+                                Todo professor na sala certa.
+                            </h1>
+                        </div>
+                        <p className="text-foreground-nassau max-w-xl text-lg">
+                            Cadastre turmas, aloque salas e acompanhe as trocas em um só lugar, com validação automática
+                            de horários.
+                        </p>
+                    </div>
                 </div>
                 <footer className="text-foreground-nassau text-sm">
                     &copy; 2026 Uninassau. Todos os direitos reservados.
@@ -59,12 +64,17 @@ function Sidebar() {
     );
 }
 
+import serEduLogo from "@/assets/ser_educacional.png";
+import { Eye, EyeClosed } from "lucide-react";
+import { useState } from "react";
+
 interface AuthCardType {
     form: UseFormReturn<Login>;
 }
 
 function AuthCard({ form }: AuthCardType) {
     const login = useAuthStore((s) => s.login);
+    const [showPassword, setShowPassword] = useState(false);
 
     const onSubmit = (data: Login) => {
         // TODO apenas para teste.
@@ -77,15 +87,23 @@ function AuthCard({ form }: AuthCardType) {
         console.log(data);
     };
 
+    const handleShowPassword = () => {
+        setShowPassword((prev) => !prev);
+    };
+
     return (
-        <div className="flex min-h-screen flex-2 items-center justify-center">
-            <Card className="w-full max-w-130 ring-0">
+        <div className="bg-foreground-nassau relative flex min-h-screen flex-1 items-center justify-center">
+            <div className="absolute top-16 right-0 w-32">
+                <img className="object-cover" src={serEduLogo} alt="Ser Educacional Logo" />
+            </div>
+            <Card className="w-full max-w-125 p-8 ring-0">
                 <CardHeader>
-                    <CardTitle className="text-blue-nassau font-semibold">Entrar</CardTitle>
-                    <CardDescription className="text-apoio">Use seu login institucional.</CardDescription>
+                    <CardTitle className="text-black-nassau text-2xl font-bold">Área da coordenação</CardTitle>
+                    <CardDescription className="text-apoio">
+                        Entre para gerenciar o ensalamento do semestre.
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {form.getFieldState("password").error && <AuthAlert />}
                     <FormProvider {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="gap-2 space-y-4 py-4" id="form">
                             <Controller
@@ -93,10 +111,15 @@ function AuthCard({ form }: AuthCardType) {
                                 control={form.control}
                                 render={({ field }) => (
                                     <Field>
-                                        <FieldLabel className="text-apoio" htmlFor="form-login uppercase">
-                                            Matrícula ou email institucional
+                                        <FieldLabel className="text-black-nassau font-bold" htmlFor="form-login">
+                                            Nome
                                         </FieldLabel>
-                                        <Input {...field} id="form-login" placeholder="nome@uninassau.edu.br"></Input>
+                                        <Input
+                                            className="bg-foreground-nassau border-paragrafo h-11.5"
+                                            {...field}
+                                            id="form-login"
+                                            placeholder="Digite seu nome"
+                                        ></Input>
                                     </Field>
                                 )}
                             ></Controller>
@@ -105,51 +128,58 @@ function AuthCard({ form }: AuthCardType) {
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel className="text-apoio" htmlFor="form-password">
+                                        <FieldLabel className="text-black-nassau font-bold" htmlFor="form-password">
                                             Senha
                                         </FieldLabel>
-                                        <Input
-                                            {...field}
-                                            id="form-password"
-                                            aria-invalid={fieldState.invalid}
-                                            autoComplete="current-password"
-                                            type="password"
-                                        ></Input>
+                                        <div className="relative">
+                                            <Input
+                                                className="bg-foreground-nassau border-paragrafo h-11.5"
+                                                {...field}
+                                                id="form-password"
+                                                aria-invalid={fieldState.invalid}
+                                                autoComplete="current-password"
+                                                placeholder="Digite sua senha"
+                                                type={showPassword ? "text" : "password"}
+                                            ></Input>
+                                            <button
+                                                className="text-green-nassau absolute top-1/2 right-0 -translate-y-1/2 cursor-pointer px-3"
+                                                type="button"
+                                                onClick={handleShowPassword}
+                                            >
+                                                {showPassword ? <Eye /> : <EyeClosed />}
+                                            </button>
+                                        </div>
                                         {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                                        <Link
-                                            to="/forgot-password"
-                                            className="text-apoio hover:text-sky-nassau text-xs hover:underline"
-                                        >
-                                            Esqueceu sua senha?
-                                        </Link>
                                     </Field>
                                 )}
                             ></Controller>
                         </form>
                     </FormProvider>
-                </CardContent>
-                <CardFooter className="flex-col bg-transparent">
+                    <Link
+                        to="/forgot-password"
+                        className="text-green-nassau hover:text-sky-nassau text-right text-xs font-semibold hover:underline"
+                    >
+                        Esqueceu sua senha?
+                    </Link>
                     <Button
                         type="submit"
                         form="form"
-                        disabled={!form.formState.isValid}
-                        className="bg-blue-nassau hover:bg-sky-nassau w-full"
+                        disabled={
+                            !form.formState.isValid ||
+                            form.getValues("login") === "" ||
+                            form.getValues("password") === ""
+                        }
+                        className="bg-green-nassau hover:bg-green-nassau/75 mt-1 h-12.5 w-full cursor-pointer"
                     >
                         Entrar
                     </Button>
-                    <p className="text-apoio mt-1 text-xs">Não consegue entrar? Procure a coordenação do seu curso.</p>
+                </CardContent>
+                <CardFooter className="flex-col bg-transparent">
+                    <p className="text-apoio text-xs">
+                        Aplicativo institucional. Uso exclusivo da comunidade acadêmica.
+                    </p>
                 </CardFooter>
             </Card>
         </div>
-    );
-}
-
-function AuthAlert() {
-    return (
-        <Alert className="border-red-nassau bg-red-nassau/5">
-            <AlertCircle color="#c2012e" />
-            <AlertTitle className="text-red-nassau">Não foi possível entrar</AlertTitle>
-            <AlertDescription>Matrícula ou senha incorreta. Restam 4 tentativas.</AlertDescription>
-        </Alert>
     );
 }
