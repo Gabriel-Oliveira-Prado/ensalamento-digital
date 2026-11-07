@@ -1,0 +1,144 @@
+{
+    "salas": [
+        {
+            "id": 1,
+            "capacidade": 40,
+            "nome": "Sala 20",
+            "tipo": "Sala comum"
+        },
+        {
+            "id": 2,
+            "capacidade": 50,
+            "nome": "Sala 21",
+            "tipo": "Sala comum"
+        },
+        {
+            "id": 3,
+            "capacidade": 30,
+            "nome": "Lab 1",
+            "tipo": "Laboratório"
+        }
+    ],
+    "recursos": [
+        {
+            "id": 1,
+            "nome": "Projetor"
+        },
+        {
+            "id": 2,
+            "nome": "Ar-condicionado"
+        },
+        {
+            "id": 3,
+            "nome": "Computadores"
+        }
+    ],
+    "disciplinas": [
+        {
+            "id": 1,
+            "nome": "Back-end",
+            "codigo": 101
+        },
+        {
+            "id": 2,
+            "nome": "Codificação de Alta Performance Mobile",
+            "codigo": 102
+        }
+    ],
+    "professores": [
+        {
+            "id": 1,
+            "email": "tony.stark@vingadores.edu.br",
+            "nome": "Tony Stark"
+        },
+        {
+            "id": 2,
+            "email": "walter.white@quimica.edu.br",
+            "nome": "Walter White"
+        }
+    ],
+    "turmas": [
+        {
+            "id": 1,
+            "qtd_aluno": 35,
+            "ano": 2026,
+            "periodo": 4
+        },
+        {
+            "id": 2,
+            "qtd_aluno": 45,
+            "ano": 2026,
+            "periodo": 4
+        }
+    ],
+    "horarios": [
+        {
+            "id": 1,
+            "dia": "2026-11-09",
+            "hora_inicio": "19:00",
+            "hora_fim": "20:40"
+        },
+        {
+            "id": 2,
+            "dia": "2026-11-09",
+            "hora_inicio": "20:50",
+            "hora_fim": "22:30"
+        }
+    ],
+    "coordenadores": [
+        {
+            "id": 1,
+            "nome": "Albus Dumbledore",
+            "email": "direcao@hogwarts.edu.br",
+            "senha": "hashed_password"
+        }
+    ],
+    "alocacoes": [
+        {
+            "id": 1,
+            "idhorario": 1,
+            "idprofessor": 1,
+            "idsala": 1,
+            "idturma": 1,
+            "iddisciplina": 1,
+            "idcoordenador": 1
+        }
+    ],
+    "historicos": [
+        {
+            "id": 1,
+            "data_alteracao": "2026-11-05",
+            "motivo": "Manutenção do ar-condicionado",
+            "idalocacao": 1
+        }
+    ],
+    "possui": [
+        {
+            "id": 1,
+            "idsala": 1,
+            "idrecurso": 1
+        },
+        {
+            "id": 2,
+            "idsala": 1,
+            "idrecurso": 2
+        },
+        {
+            "id": 3,
+            "idsala": 3,
+            "idrecurso": 3
+        }
+    ],
+    "necessita_de": [
+        {
+            "id": 1,
+            "iddisciplina": 1,
+            "idrecurso": 1
+        },
+        {
+            "id": 2,
+            "iddisciplina": 2,
+            "idrecurso": 3
+        }
+    ]
+}
