@@ -1,9 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/auth.store";
-import { Controller, FormProvider, useForm, type UseFormReturn } from "react-hook-form";
+import { FormProvider, useForm, type UseFormReturn } from "react-hook-form";
 import { Link, Navigate } from "react-router-dom";
 
 interface Login {
@@ -15,7 +13,7 @@ export function LoginPage() {
     const token = useAuthStore((s) => s.token);
 
     const form = useForm<Login>({
-        mode: "onSubmit",
+        mode: "onChange",
     });
 
     if (token) {
@@ -65,6 +63,7 @@ function Sidebar() {
 }
 
 import serEduLogo from "@/assets/ser_educacional.png";
+import { InputText } from "@/components/input.text";
 import { Eye, EyeClosed } from "lucide-react";
 import { useState } from "react";
 
@@ -78,8 +77,8 @@ function AuthCard({ form }: AuthCardType) {
 
     const onSubmit = (data: Login) => {
         // TODO apenas para teste.
-        if (data.login !== "01811863" || data.password !== "123456") {
-            form.setError("password", { message: "Matrícula ou senha incorretas" });
+        if (data.login !== "Rober" || data.password !== "123456") {
+            form.setError("password", { message: "Nome ou senha incorretos" });
             return;
         }
 
@@ -106,53 +105,36 @@ function AuthCard({ form }: AuthCardType) {
                 <CardContent>
                     <FormProvider {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="gap-2 space-y-4 py-4" id="form">
-                            <Controller
+                            <InputText
                                 name="login"
                                 control={form.control}
-                                render={({ field }) => (
-                                    <Field>
-                                        <FieldLabel className="text-black-nassau font-bold" htmlFor="form-login">
-                                            Nome
-                                        </FieldLabel>
-                                        <Input
-                                            className="bg-foreground-nassau border-paragrafo h-11.5"
-                                            {...field}
-                                            id="form-login"
-                                            placeholder="Digite seu nome"
-                                        ></Input>
-                                    </Field>
-                                )}
-                            ></Controller>
-                            <Controller
+                                label="Nome"
+                                id="form-login"
+                                placeholder="Digite seu nome"
+                                rules={{
+                                    required: true,
+                                }}
+                            />
+                            <InputText
                                 name="password"
                                 control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel className="text-black-nassau font-bold" htmlFor="form-password">
-                                            Senha
-                                        </FieldLabel>
-                                        <div className="relative">
-                                            <Input
-                                                className="bg-foreground-nassau border-paragrafo h-11.5"
-                                                {...field}
-                                                id="form-password"
-                                                aria-invalid={fieldState.invalid}
-                                                autoComplete="current-password"
-                                                placeholder="Digite sua senha"
-                                                type={showPassword ? "text" : "password"}
-                                            ></Input>
-                                            <button
-                                                className="text-green-nassau absolute top-1/2 right-0 -translate-y-1/2 cursor-pointer px-3"
-                                                type="button"
-                                                onClick={handleShowPassword}
-                                            >
-                                                {showPassword ? <Eye /> : <EyeClosed />}
-                                            </button>
-                                        </div>
-                                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                                    </Field>
-                                )}
-                            ></Controller>
+                                label="Senha"
+                                id="form-password"
+                                autoComplete="current-password"
+                                placeholder="Digite sua Senha"
+                                type={showPassword ? "text" : "password"}
+                                rules={{
+                                    required: true,
+                                }}
+                            >
+                                <button
+                                    className="text-green-nassau absolute top-1/2 right-0 -translate-y-1/2 cursor-pointer px-3"
+                                    type="button"
+                                    onClick={handleShowPassword}
+                                >
+                                    {showPassword ? <Eye /> : <EyeClosed />}
+                                </button>
+                            </InputText>
                         </form>
                     </FormProvider>
                     <Link
@@ -164,11 +146,7 @@ function AuthCard({ form }: AuthCardType) {
                     <Button
                         type="submit"
                         form="form"
-                        disabled={
-                            !form.formState.isValid ||
-                            form.getValues("login") === "" ||
-                            form.getValues("password") === ""
-                        }
+                        disabled={!form.formState.isValid || form.formState.isSubmitting}
                         className="bg-green-nassau hover:bg-green-nassau/75 mt-1 h-12.5 w-full cursor-pointer"
                     >
                         Entrar
