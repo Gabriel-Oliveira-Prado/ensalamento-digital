@@ -1,3 +1,4 @@
+import logo from "@/assets/dark.svg";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/stores/auth.store";
@@ -27,8 +28,6 @@ export function LoginPage() {
         </>
     );
 }
-
-import logo from "@/assets/dark.svg";
 
 function Sidebar() {
     return (
@@ -64,6 +63,8 @@ function Sidebar() {
 
 import serEduLogo from "@/assets/ser_educacional.png";
 import { InputText } from "@/components/input.text";
+import { Spinner } from "@/components/ui/spinner";
+import { delay } from "@/utils/delay";
 import { Eye, EyeClosed } from "lucide-react";
 import { useState } from "react";
 
@@ -75,15 +76,17 @@ function AuthCard({ form }: AuthCardType) {
     const login = useAuthStore((s) => s.login);
     const [showPassword, setShowPassword] = useState(false);
 
-    const onSubmit = (data: Login) => {
+    const onSubmit = async (data: Login) => {
         // TODO apenas para teste.
-        if (data.login !== "Rober" || data.password !== "123456") {
-            form.setError("password", { message: "Nome ou senha incorretos" });
-            return;
-        }
+        await delay(1000).finally(() => {
+            if (data.login !== "Rober" || data.password !== "123456") {
+                form.setError("password", { message: "Nome ou senha incorretos" });
+                return;
+            }
 
-        login({ login: data.login, password: data.password }, "fake-token");
-        console.log(data);
+            login({ login: data.login, password: data.password }, "fake-token");
+            console.log(data);
+        });
     };
 
     const handleShowPassword = () => {
@@ -149,7 +152,8 @@ function AuthCard({ form }: AuthCardType) {
                         disabled={!form.formState.isValid || form.formState.isSubmitting}
                         className="bg-green-nassau hover:bg-green-nassau/75 mt-1 h-12.5 w-full cursor-pointer"
                     >
-                        Entrar
+                        {form.formState.isSubmitting && <Spinner />}
+                        {form.formState.isSubmitting ? "Entrando..." : "Entrar"}
                     </Button>
                 </CardContent>
                 <CardFooter className="flex-col bg-transparent">

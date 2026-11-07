@@ -18,9 +18,9 @@ export function InputText<T extends FieldValues>({
     label,
     id,
     rules,
-    placeholder,
     className,
     children,
+    ...props
 }: InputTextProps<T>) {
     return (
         <Controller
@@ -38,7 +38,7 @@ export function InputText<T extends FieldValues>({
                             {...field}
                             aria-invalid={fieldState.invalid}
                             id={id}
-                            placeholder={placeholder}
+                            {...props}
                         ></Input>
                         {children}
                     </div>
