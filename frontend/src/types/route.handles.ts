@@ -1,6 +1,6 @@
 export interface RouteHandleMetada {
-    shortTitle?: string;
+    shortTitle: string;
     spanTitle?: string;
-    shortDescription?: string;
+    shortDescription: string;
     spanDescription?: string;
 }
