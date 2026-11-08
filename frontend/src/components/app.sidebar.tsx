@@ -73,7 +73,7 @@ export function AppSidebar() {
                                         render={
                                             <Link
                                                 to={`./${item.to}`}
-                                                className="group flex h-11 transition-colors hover:bg-white/10 data-active:bg-white/15"
+                                                className="group flex h-11 transition-colors hover:bg-white/10 active:bg-white/15 data-active:bg-white/15"
                                             >
                                                 <div className="group-data-active:bg-gold-nassau h-6 w-1 rounded-full bg-transparent"></div>
                                                 <Icon
