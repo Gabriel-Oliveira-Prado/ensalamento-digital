@@ -7,9 +7,9 @@ export function HomePage() {
     useEffect(() => {
         setPageHeader({
             shortTitle: "Ensalamento",
-            spanTitle: "semanal",
+            spanTitle: " semanal",
             shortDescription: "Semestre 2026.2",
-            spanDescription: "· alocação de turmas por dia e horário",
+            spanDescription: " · alocação de turmas por dia e horário",
         });
 
         return () => {
