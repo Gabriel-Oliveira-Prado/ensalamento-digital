@@ -1,3 +1,4 @@
+import logo from "@/assets/dark.svg";
 import {
     Sidebar,
     SidebarContent,
@@ -10,8 +11,11 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from "@/components/ui/sidebar";
-import { ArrowLeftRight, Calendar, Clock, LayoutGrid, type LucideIcon } from "lucide-react";
+import { useAuthStore } from "@/stores/auth.store";
+import { ArrowLeftRight, Calendar, Clock, LayoutGrid, LogOut, type LucideIcon } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Button } from "./ui/button";
 
 interface menuItemsType {
     to: "" | "cadastros" | "solicitacoes" | "historico";
@@ -47,14 +51,18 @@ export function AppSidebar() {
 
     return (
         <Sidebar>
-            <SidebarHeader className="bg-blue-nassau" />
+            <SidebarHeader className="bg-blue-nassau p-4">
+                <div className="w-full">
+                    <img src={logo} alt="Logo uninassau branca" />
+                </div>
+            </SidebarHeader>
             <SidebarContent className="bg-blue-nassau">
                 <SidebarGroup>
                     <SidebarGroupLabel className="text-apoio">Administração</SidebarGroupLabel>
                     <SidebarMenu>
                         {menuItems.map((item) => {
                             const Icon = item.icon;
-                            const path = location.pathname.split("/")[2];
+                            const path = location.pathname.split("/")[2] ? location.pathname.split("/")[2] : "";
 
                             const isActive = path === item.to;
 
@@ -85,7 +93,25 @@ export function AppSidebar() {
                 </SidebarGroup>
                 <SidebarGroup />
             </SidebarContent>
-            <SidebarFooter className="bg-blue-nassau" />
+            <SidebarFooter className="bg-blue-nassau p-4">
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <div className="flex items-center gap-2 rounded-lg bg-white/8 p-4">
+                            <Avatar className="size-8">
+                                <AvatarImage alt="Avatar" />
+                                <AvatarFallback>CO</AvatarFallback>
+                            </Avatar>
+                            <div className="grid flex-1 text-left text-sm leading-tight">
+                                <span className="truncate font-bold text-white">Coordenação</span>
+                                <span className="text-paragrafo truncate text-xs">Secretaria acadêmica</span>
+                            </div>
+                            <Button variant="outline" size="icon" onClick={useAuthStore.getState().logout}>
+                                <LogOut />
+                            </Button>
+                        </div>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
             <SidebarRail />
         </Sidebar>
     );
