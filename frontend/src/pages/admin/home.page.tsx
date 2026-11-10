@@ -46,7 +46,6 @@ const major = [
 ];
 
 const semester = [
-    { label: "Todos", value: "all" },
     { label: "2026.2", value: "2026.2" },
     { label: "2027.1", value: "2027.1" },
 ];
@@ -60,11 +59,11 @@ function Header() {
             <Pagination className="ml-5 w-auto">
                 <PaginationContent>
                     <PaginationItem>
-                        <PaginationPrevious className="flex items-center justify-center rounded-full bg-white" />
+                        <PaginationPrevious className="border-paragrafo flex h-fit items-center justify-center rounded-full bg-white p-2.5!" />
                     </PaginationItem>
                     <span className="px-2 text-sm font-bold">26 ou a 31 out 2026</span>
                     <PaginationItem>
-                        <PaginationNext className="flex items-center justify-center rounded-full bg-white" />
+                        <PaginationNext className="border-paragrafo flex h-fit items-center justify-center rounded-full bg-white p-2.5!" />
                     </PaginationItem>
                 </PaginationContent>
             </Pagination>
