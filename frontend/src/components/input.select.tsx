@@ -9,7 +9,7 @@ interface InputSelectProps {
 export function InputSelect({ label, items, defaultValue }: InputSelectProps) {
     return (
         <Select items={items} defaultValue={defaultValue}>
-            <SelectTrigger className="min-h-11 w-full max-w-40 bg-white">
+            <SelectTrigger className="min-h-11 w-full max-w-44 bg-white">
                 <span className="text-sm font-bold">{label}</span>
                 <SelectValue className="text-sm font-bold" />
             </SelectTrigger>

@@ -10,7 +10,9 @@ export function DashboardLayout() {
             <SidebarInset>
                 <main className="bg-foreground-nassau min-h-screen">
                     <AdminHeader />
-                    <Outlet />
+                    <div className="px-4 pb-6 sm:px-6 lg:px-8">
+                        <Outlet />
+                    </div>
                 </main>
             </SidebarInset>
         </SidebarProvider>
