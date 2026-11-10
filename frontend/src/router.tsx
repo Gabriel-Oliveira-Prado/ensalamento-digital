@@ -1,9 +1,11 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./components/protected.route";
 import { AuthLayout } from "./layouts/auth.layout";
+import { DashboardLayout } from "./layouts/dashboard.layout";
 import { RootLayout } from "./layouts/root.layout";
 import { LoginPage } from "./pages/admin/auth/login.page";
 import { HomePage } from "./pages/admin/home.page";
+import { RegisterPage } from "./pages/admin/register.page";
 import { PainelTvPage } from "./pages/tv/painel.page";
 
 export const router = createBrowserRouter([
@@ -22,8 +24,17 @@ export const router = createBrowserRouter([
                         element: <ProtectedRoute />,
                         children: [
                             {
-                                index: true,
-                                element: <HomePage />,
+                                element: <DashboardLayout />,
+                                children: [
+                                    {
+                                        index: true,
+                                        element: <HomePage />,
+                                    },
+                                    {
+                                        path: "cadastros",
+                                        element: <RegisterPage />,
+                                    },
+                                ],
                             },
                         ],
                     },

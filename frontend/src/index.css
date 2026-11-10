@@ -55,7 +55,7 @@
   --color-foreground-nassau: #eef2f7;
   --color-black-nassau: #10243e;
   --color-paragrafo: #cbd5e1;
-  --color-apoio: #5b6472;
+  --color-apoio: #64748b;
   --color-green-nassau: #0f7f86;
 }
 
@@ -134,7 +134,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-black-nassau;
   }
 
   html {
