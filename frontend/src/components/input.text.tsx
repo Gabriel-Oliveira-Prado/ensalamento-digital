@@ -34,7 +34,7 @@ export function InputText<T extends FieldValues>({
                     </FieldLabel>
                     <div className="relative">
                         <Input
-                            className={cn("bg-foreground-nassau border-paragrafo h-11.5", className)}
+                            className={cn("bg-foreground-nassau border-paragrafo/50 h-11.5", className)}
                             {...field}
                             aria-invalid={fieldState.invalid}
                             id={id}

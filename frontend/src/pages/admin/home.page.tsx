@@ -1,3 +1,4 @@
+import { HomeCalendar } from "@/components/home.calendar";
 import { InputSelect } from "@/components/input.select";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ export function HomePage() {
     return (
         <>
             <Header />
+            <HomeCalendar />
         </>
     );
 }
@@ -59,11 +61,11 @@ function Header() {
             <Pagination className="ml-5 w-auto">
                 <PaginationContent>
                     <PaginationItem>
-                        <PaginationPrevious className="border-paragrafo flex h-fit items-center justify-center rounded-full bg-white p-2.5!" />
+                        <PaginationPrevious className="border-paragrafo/50 flex h-fit items-center justify-center rounded-full bg-white p-2.5!" />
                     </PaginationItem>
                     <span className="px-2 text-sm font-bold">26 ou a 31 out 2026</span>
                     <PaginationItem>
-                        <PaginationNext className="border-paragrafo flex h-fit items-center justify-center rounded-full bg-white p-2.5!" />
+                        <PaginationNext className="border-paragrafo/50 flex h-fit items-center justify-center rounded-full bg-white p-2.5!" />
                     </PaginationItem>
                 </PaginationContent>
             </Pagination>
