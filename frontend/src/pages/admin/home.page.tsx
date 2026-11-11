@@ -28,10 +28,10 @@ export function HomePage() {
     }, [setPageHeader, resetPageHeader]);
 
     return (
-        <>
+        <div className="flex flex-1 flex-col">
             <Header />
             <HomeCalendar />
-        </>
+        </div>
     );
 }
 
