@@ -14,6 +14,7 @@ import { useEffect } from "react";
 export function HomePage() {
     const setPageHeader = usePageHeaderStore((s) => s.setPageHeader);
     const resetPageHeader = usePageHeaderStore((s) => s.resetPageHeader);
+    const currentDate = new Date(); // You can set this to any date you want to display in the calendar
     useEffect(() => {
         setPageHeader({
             shortTitle: "Ensalamento",
@@ -30,7 +31,7 @@ export function HomePage() {
     return (
         <div className="flex flex-1 flex-col">
             <Header />
-            <HomeCalendar />
+            <HomeCalendar currentDate={currentDate} />
         </div>
     );
 }

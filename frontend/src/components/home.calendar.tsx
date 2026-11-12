@@ -1,11 +1,12 @@
 import { Calendar } from "@/utils/date";
 import { Plus } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 import { Item, ItemActions, ItemContent, ItemTitle } from "./ui/item";
 
 interface HomeCalendarProps {
-    onCurrentDate?: (date: Date) => void;
+    currentDate: Date;
 }
 
 const times = [
@@ -15,9 +16,47 @@ const times = [
     { start: "10:50", end: "11:40" },
 ];
 
-export function HomeCalendar({ onCurrentDate }: HomeCalendarProps) {
-    const [currentDate, setCurrentDate] = useState(new Date());
+const allocation = [
+    {
+        id: 1,
+        horario: {
+            id: 1,
+            dia: "2026-11-09",
+            hora_inicio: "19:00",
+            hora_fim: "20:40",
+        },
+        professor: {
+            id: 1,
+            email: "tony.stark@vingadores.edu.br",
+            nome: "Tony Stark",
+        },
+        sala: {
+            id: 1,
+            capacidade: 40,
+            nome: "Sala 20",
+            tipo: "Sala comum",
+        },
+        turma: {
+            id: 1,
+            qtd_aluno: 35,
+            ano: 2026,
+            periodo: 4,
+        },
+        disciplina: {
+            id: 1,
+            nome: "Back-end",
+            codigo: 101,
+        },
+        coordenador: {
+            id: 1,
+            nome: "Albus Dumbledore",
+            email: "direcao@hogwarts.edu.br",
+            senha: "hashed_password",
+        },
+    },
+];
 
+export function HomeCalendar({ currentDate }: HomeCalendarProps) {
     const c = new Calendar(currentDate);
 
     return (
@@ -68,5 +107,11 @@ function EmptyCard() {
         >
             <Plus size={14} className="text-apoio" />
         </Button>
+    );
+}
+
+function AllocationCard() {
+    return (
+        <Card className="border-paragrafo flex h-full flex-1 cursor-pointer items-center justify-center border-2 bg-white"></Card>
     );
 }
