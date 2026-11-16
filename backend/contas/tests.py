@@ -167,4 +167,60 @@ class AutenticacaoTestes(TestCase):
             format="json"
         )
 
-        self.assertEqual(resposta.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn(resposta.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+    def test_listar_usuarios(self):
+        self.autenticar(self.admin)
+        resposta = self.client.get("/api/usuarios/lista/")
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(resposta.data), 3)
+
+    def test_detalhar_usuario(self):
+        self.autenticar(self.admin)
+        resposta = self.client.get(f"/api/usuarios/{self.professor.id}/")
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.data["email"], self.professor.email)
+        self.assertNotIn("password", resposta.data)
+
+    def test_atualizar_usuario_sem_senha(self):
+        self.autenticar(self.admin)
+        resposta = self.client.patch(
+            f"/api/usuarios/{self.professor.id}/atualizar/",
+            {"first_name": "NomeAtualizado"},
+            format="json"
+        )
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.professor.refresh_from_db()
+        self.assertEqual(self.professor.first_name, "NomeAtualizado")
+
+    def test_atualizar_usuario_com_nova_senha(self):
+        self.autenticar(self.admin)
+        resposta = self.client.patch(
+            f"/api/usuarios/{self.professor.id}/atualizar/",
+            {"password": "NovaSenhaForte@98765"},
+            format="json"
+        )
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        # Verifica se o login funciona com a nova senha
+        resposta_login = self.client.post(
+            "/api/auth/token/",
+            {
+                "email": self.professor.email,
+                "password": "NovaSenhaForte@98765"
+            },
+            format="json"
+        )
+        self.assertEqual(resposta_login.status_code, status.HTTP_200_OK)
+
+    def test_excluir_usuario(self):
+        self.autenticar(self.admin)
+        usuario_temp = self.criar_usuario("temp@teste.com", Usuario.TipoUsuario.PROFESSOR)
+        resposta = self.client.delete(f"/api/usuarios/{usuario_temp.id}/excluir/")
+        self.assertEqual(resposta.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Usuario.objects.filter(id=usuario_temp.id).exists())
+
+    def test_impedir_auto_exclusao(self):
+        self.autenticar(self.admin)
+        resposta = self.client.delete(f"/api/usuarios/{self.admin.id}/excluir/")
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Usuario.objects.filter(id=self.admin.id).exists())

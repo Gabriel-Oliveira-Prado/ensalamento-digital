@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, serializers
 from rest_framework.permissions import IsAuthenticated
 
 from .models import Usuario
@@ -15,19 +15,29 @@ class CadastroUsuarioView(generics.CreateAPIView):
 class ListaUsuarioView(generics.ListAPIView):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
-    permission_classes = [PodeVisualizarUsuario]
+    permission_classes = [IsAuthenticated, PodeVisualizarUsuario]
+
 
 class DetalheUsuarioView(generics.RetrieveAPIView):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
     permission_classes = [IsAuthenticated, PodeVisualizarUsuario]
 
+
 class AtualizarUsuarioView(generics.UpdateAPIView):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
     permission_classes = [IsAuthenticated, PodeVisualizarUsuario]
 
+
 class ExcluirUsuarioView(generics.DestroyAPIView):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
     permission_classes = [IsAuthenticated, PodeVisualizarUsuario]
+
+    def perform_destroy(self, instance):
+        if instance == self.request.user:
+            raise serializers.ValidationError(
+                {"detail": "Você não pode excluir sua própria conta de usuário."}
+            )
+        instance.delete()

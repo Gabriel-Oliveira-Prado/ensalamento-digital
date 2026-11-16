@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+
+@dataclass
 class AlocacaoDTO:
     id: int
     horario_id: int
