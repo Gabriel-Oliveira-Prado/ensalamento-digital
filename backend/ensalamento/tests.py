@@ -3,7 +3,18 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from contas.models import Usuario
-from .models import Disciplina, Horario, Recurso, Sala, Turma
+from .models import (
+    Alocacao,
+    Coordenador,
+    Disciplina,
+    Horario,
+    NecessitaDe,
+    Possui,
+    Professor,
+    Recurso,
+    Sala,
+    Turma,
+)
 
 
 class RecursoCrudTests(TestCase):
@@ -600,4 +611,504 @@ class HorarioCrudTests(TestCase):
         self.assertEqual(
             resposta.status_code,
             status.HTTP_400_BAD_REQUEST,
+        )
+class RelacionamentoRecursosTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.admin = Usuario.objects.create_user(
+            email="admin-relacionamentos@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
+        )
+
+        self.professor = Usuario.objects.create_user(
+            email="professor-relacionamentos@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
+
+        self.sala = Sala.objects.create(
+            nome="B204",
+            capacidade=40,
+            tipo="Sala de aula",
+        )
+
+        self.recurso = Recurso.objects.create(
+            nome="Projetor"
+        )
+
+        self.disciplina = Disciplina.objects.create(
+            nome="Banco de Dados"
+        )
+
+    def test_administrador_pode_associar_recurso_a_sala(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            "/api/ensalamento/possui/",
+            {
+                "sala": self.sala.id,
+                "recurso": self.recurso.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            Possui.objects.filter(
+                sala=self.sala,
+                recurso=self.recurso,
+            ).exists()
+        )
+
+    def test_professor_nao_pode_associar_recurso_a_sala(self):
+        self.client.force_authenticate(user=self.professor)
+
+        resposta = self.client.post(
+            "/api/ensalamento/possui/",
+            {
+                "sala": self.sala.id,
+                "recurso": self.recurso.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_nao_pode_duplicar_recurso_na_mesma_sala(self):
+        self.client.force_authenticate(user=self.admin)
+
+        Possui.objects.create(
+            sala=self.sala,
+            recurso=self.recurso,
+        )
+
+        resposta = self.client.post(
+            "/api/ensalamento/possui/",
+            {
+                "sala": self.sala.id,
+                "recurso": self.recurso.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_administrador_pode_listar_recursos_da_sala(self):
+        self.client.force_authenticate(user=self.admin)
+
+        Possui.objects.create(
+            sala=self.sala,
+            recurso=self.recurso,
+        )
+
+        resposta = self.client.get(
+            "/api/ensalamento/possui/"
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(len(resposta.data), 1)
+
+    def test_administrador_pode_remover_recurso_da_sala(self):
+        self.client.force_authenticate(user=self.admin)
+
+        relacionamento = Possui.objects.create(
+            sala=self.sala,
+            recurso=self.recurso,
+        )
+
+        resposta = self.client.delete(
+            f"/api/ensalamento/possui/{relacionamento.id}/"
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Possui.objects.filter(
+                id=relacionamento.id
+            ).exists()
+        )
+
+    def test_administrador_pode_associar_recurso_a_disciplina(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            "/api/ensalamento/necessita-de/",
+            {
+                "disciplina": self.disciplina.id,
+                "recurso": self.recurso.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            NecessitaDe.objects.filter(
+                disciplina=self.disciplina,
+                recurso=self.recurso,
+            ).exists()
+        )
+
+    def test_professor_nao_pode_associar_recurso_a_disciplina(self):
+        self.client.force_authenticate(user=self.professor)
+
+        resposta = self.client.post(
+            "/api/ensalamento/necessita-de/",
+            {
+                "disciplina": self.disciplina.id,
+                "recurso": self.recurso.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_nao_pode_duplicar_recurso_exigido_por_disciplina(self):
+        self.client.force_authenticate(user=self.admin)
+
+        NecessitaDe.objects.create(
+            disciplina=self.disciplina,
+            recurso=self.recurso,
+        )
+
+        resposta = self.client.post(
+            "/api/ensalamento/necessita-de/",
+            {
+                "disciplina": self.disciplina.id,
+                "recurso": self.recurso.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_administrador_pode_remover_recurso_da_disciplina(self):
+        self.client.force_authenticate(user=self.admin)
+
+        relacionamento = NecessitaDe.objects.create(
+            disciplina=self.disciplina,
+            recurso=self.recurso,
+        )
+
+        resposta = self.client.delete(
+            f"/api/ensalamento/necessita-de/{relacionamento.id}/"
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            NecessitaDe.objects.filter(
+                id=relacionamento.id
+            ).exists()
+        )
+class AlocacaoCrudTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.admin = Usuario.objects.create_user(
+            email="admin-alocacao@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
+        )
+
+        self.coordenador_usuario = Usuario.objects.create_user(
+            email="coordenador-alocacao@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.COORDENADOR,
+        )
+
+        self.professor_usuario = Usuario.objects.create_user(
+            email="professor-alocacao@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
+
+        self.professor = Professor.objects.create(
+            email="professor-dominio@teste.com",
+            nome="Professor Teste",
+            matricula=123456,
+            senha="senha-legada",
+        )
+
+        self.coordenador = Coordenador.objects.create(
+            nome="Coordenador Teste",
+            email="coordenador-dominio@teste.com",
+            senha="senha-legada",
+        )
+
+        self.sala = Sala.objects.create(
+            nome="B204",
+            capacidade=40,
+            tipo="Sala de aula",
+        )
+
+        self.turma = Turma.objects.create(
+            qtd_aluno=30,
+            ano=2026,
+            periodo=2,
+        )
+
+        self.disciplina = Disciplina.objects.create(
+            nome="Banco de Dados",
+        )
+
+        self.horario = Horario.objects.create(
+            dia="2026-11-20",
+            hora_inicio="08:00:00",
+            hora_fim="10:00:00",
+        )
+
+        self.alocacao = Alocacao.objects.create(
+            horario=self.horario,
+            professor=self.professor,
+            sala=self.sala,
+            turma=self.turma,
+            disciplina=self.disciplina,
+            coordenador=self.coordenador,
+        )
+
+    def dados_alocacao(self):
+        return {
+            "horario": self.horario.id,
+            "professor": self.professor.id,
+            "sala": self.sala.id,
+            "turma": self.turma.id,
+            "disciplina": self.disciplina.id,
+            "coordenador": self.coordenador.id,
+        }
+
+    def test_coordenador_pode_listar_alocacoes(self):
+        self.client.force_authenticate(
+            user=self.coordenador_usuario
+        )
+
+        resposta = self.client.get(
+            "/api/ensalamento/alocacoes/"
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(len(resposta.data), 1)
+
+    def test_administrador_pode_criar_alocacao(self):
+        novo_horario = Horario.objects.create(
+            dia="2026-11-21",
+            hora_inicio="08:00:00",
+            hora_fim="10:00:00",
+        )
+
+        nova_turma = Turma.objects.create(
+            qtd_aluno=25,
+            ano=2026,
+            periodo=2,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        dados = {
+            "horario": novo_horario.id,
+            "professor": self.professor.id,
+            "sala": self.sala.id,
+            "turma": nova_turma.id,
+            "disciplina": self.disciplina.id,
+            "coordenador": self.coordenador.id,
+        }
+
+        resposta = self.client.post(
+            "/api/ensalamento/alocacoes/",
+            dados,
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+    def test_professor_nao_pode_criar_alocacao(self):
+        self.client.force_authenticate(
+            user=self.professor_usuario
+        )
+
+        resposta = self.client.post(
+            "/api/ensalamento/alocacoes/",
+            self.dados_alocacao(),
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_nao_pode_alocar_sala_em_horario_conflitante(self):
+        nova_turma = Turma.objects.create(
+            qtd_aluno=20,
+            ano=2026,
+            periodo=2,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        dados = self.dados_alocacao()
+        dados["turma"] = nova_turma.id
+
+        resposta = self.client.post(
+            "/api/ensalamento/alocacoes/",
+            dados,
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual(
+            resposta.data["erro"][0],
+            "conflito_sala",
+        )
+
+    def test_nao_pode_alocar_professor_em_horario_conflitante(self):
+        nova_sala = Sala.objects.create(
+            nome="B205",
+            capacidade=40,
+            tipo="Sala de aula",
+        )
+
+        nova_turma = Turma.objects.create(
+            qtd_aluno=20,
+            ano=2026,
+            periodo=2,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        dados = self.dados_alocacao()
+        dados["sala"] = nova_sala.id
+        dados["turma"] = nova_turma.id
+
+        resposta = self.client.post(
+            "/api/ensalamento/alocacoes/",
+            dados,
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual(
+            resposta.data["erro"][0],
+            "conflito_professor",
+        )
+
+    def test_nao_pode_alocar_turma_em_horario_conflitante(self):
+        nova_sala = Sala.objects.create(
+            nome="B206",
+            capacidade=40,
+            tipo="Sala de aula",
+        )
+
+        novo_professor = Professor.objects.create(
+            email="outro-professor@teste.com",
+            nome="Outro Professor",
+            matricula=654321,
+            senha="senha-legada",
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        dados = self.dados_alocacao()
+        dados["sala"] = nova_sala.id
+        dados["professor"] = novo_professor.id
+
+        resposta = self.client.post(
+            "/api/ensalamento/alocacoes/",
+            dados,
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual(
+            resposta.data["erro"][0],
+            "conflito_turma",
+        )
+
+    def test_administrador_pode_atualizar_alocacao(self):
+        nova_sala = Sala.objects.create(
+            nome="B207",
+            capacidade=40,
+            tipo="Sala de aula",
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.patch(
+            f"/api/ensalamento/alocacoes/{self.alocacao.id}/",
+            {"sala": nova_sala.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.alocacao.refresh_from_db()
+        self.assertEqual(
+            self.alocacao.sala.id,
+            nova_sala.id,
+        )
+
+    def test_administrador_pode_excluir_alocacao(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.delete(
+            f"/api/ensalamento/alocacoes/{self.alocacao.id}/",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Alocacao.objects.filter(
+                id=self.alocacao.id
+            ).exists()
         )

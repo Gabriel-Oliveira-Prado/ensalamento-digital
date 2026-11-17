@@ -1,10 +1,16 @@
 from django.urls import path
 
 from .views import (
+    AlocacaoDetailView,
+    AlocacaoListCreateView,
     DisciplinaDetailView,
     DisciplinaListCreateView,
     HorarioDetailView,
     HorarioListCreateView,
+    NecessitaDeDetailView,
+    NecessitaDeListCreateView,
+    PossuiDetailView,
+    PossuiListCreateView,
     RecursoDetailView,
     RecursoListCreateView,
     SalaDetailView,
@@ -65,4 +71,34 @@ urlpatterns = [
         HorarioDetailView.as_view(),
         name="horario-detail",
     ),
+    path(
+        "possui/",
+        PossuiListCreateView.as_view(),
+        name="possui-list-create",
+    ),
+    path(
+        "possui/<int:pk>/",
+        PossuiDetailView.as_view(),
+        name="possui-detail",
+    ),
+    path(
+        "necessita-de/",
+        NecessitaDeListCreateView.as_view(),
+        name="necessita-de-list-create",
+    ),
+    path(
+        "necessita-de/<int:pk>/",
+        NecessitaDeDetailView.as_view(),
+        name="necessita-de-detail",
+    ),
+    path(
+        "alocacoes/",
+        AlocacaoListCreateView.as_view(),
+        name="alocacao-list-create",
+    ),
+    path(
+        "alocacoes/<int:pk>/",
+        AlocacaoDetailView.as_view(),
+        name="alocacao-detail",
+),
 ]

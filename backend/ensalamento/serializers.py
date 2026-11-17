@@ -1,8 +1,13 @@
 from rest_framework import serializers
 
 from .models import (
+    Alocacao,
+    Coordenador,
     Disciplina,
     Horario,
+    NecessitaDe,
+    Possui,
+    Professor,
     Recurso,
     Sala,
     Turma,
@@ -97,5 +102,128 @@ class HorarioSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "A hora final deve ser posterior à hora inicial."
             )
+
+        return attrs
+
+class PossuiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Possui
+        fields = ["id", "sala", "recurso"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        sala = attrs["sala"]
+        recurso = attrs["recurso"]
+
+        if Possui.objects.filter(
+            sala=sala,
+            recurso=recurso,
+        ).exists():
+            raise serializers.ValidationError(
+                "Este recurso já está associado a esta sala."
+            )
+
+        return attrs
+
+class NecessitaDeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NecessitaDe
+        fields = ["id", "disciplina", "recurso"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        disciplina = attrs["disciplina"]
+        recurso = attrs["recurso"]
+
+        if NecessitaDe.objects.filter(
+            disciplina=disciplina,
+            recurso=recurso,
+        ).exists():
+            raise serializers.ValidationError(
+                "Este recurso já é exigido por esta disciplina."
+            )
+
+        return attrs
+
+class AlocacaoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Alocacao
+        fields = [
+            "id",
+            "horario",
+            "professor",
+            "sala",
+            "turma",
+            "disciplina",
+            "coordenador",
+        ]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        horario = attrs.get(
+            "horario",
+            getattr(self.instance, "horario", None),
+        )
+        professor = attrs.get(
+            "professor",
+            getattr(self.instance, "professor", None),
+        )
+        sala = attrs.get(
+            "sala",
+            getattr(self.instance, "sala", None),
+        )
+        turma = attrs.get(
+            "turma",
+            getattr(self.instance, "turma", None),
+        )
+
+        conflitos = Alocacao.objects.all()
+
+        if self.instance:
+            conflitos = conflitos.exclude(
+                id=self.instance.id
+            )
+
+        if horario and sala:
+            conflito_sala = conflitos.filter(
+                sala=sala,
+                horario__dia=horario.dia,
+                horario__hora_inicio__lt=horario.hora_fim,
+                horario__hora_fim__gt=horario.hora_inicio,
+            ).exists()
+
+            if conflito_sala:
+                raise serializers.ValidationError({
+                    "erro": "conflito_sala",
+                    "detalhe": "A sala já está ocupada nesse horário.",
+                })
+
+        if horario and professor:
+            conflito_professor = conflitos.filter(
+                professor=professor,
+                horario__dia=horario.dia,
+                horario__hora_inicio__lt=horario.hora_fim,
+                horario__hora_fim__gt=horario.hora_inicio,
+            ).exists()
+
+            if conflito_professor:
+                raise serializers.ValidationError({
+                    "erro": "conflito_professor",
+                    "detalhe": "O professor já possui uma aula nesse horário.",
+                })
+
+        if horario and turma:
+            conflito_turma = conflitos.filter(
+                turma=turma,
+                horario__dia=horario.dia,
+                horario__hora_inicio__lt=horario.hora_fim,
+                horario__hora_fim__gt=horario.hora_inicio,
+            ).exists()
+
+            if conflito_turma:
+                raise serializers.ValidationError({
+                    "erro": "conflito_turma",
+                    "detalhe": "A turma já possui uma aula nesse horário.",
+                })
 
         return attrs
