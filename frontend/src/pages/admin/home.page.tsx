@@ -9,12 +9,32 @@ import {
     PaginationPrevious,
 } from "@/components/ui/pagination";
 import { usePageHeaderStore } from "@/stores/header.store";
-import { useEffect } from "react";
+import { Calendar } from "@/utils/date";
+import { useEffect, useState } from "react";
 
 export function HomePage() {
     const setPageHeader = usePageHeaderStore((s) => s.setPageHeader);
     const resetPageHeader = usePageHeaderStore((s) => s.resetPageHeader);
-    const currentDate = new Date(); // You can set this to any date you want to display in the calendar
+    const [currentDate, setCurrentDate] = useState(() => new Date());
+
+    useEffect(() => {
+        let timeoutId: number;
+
+        const scheduleMidnightUpdate = () => {
+            const now = new Date();
+            const nextMidnight = new Date(now);
+            nextMidnight.setHours(24, 0, 0, 0);
+
+            timeoutId = window.setTimeout(() => {
+                setCurrentDate(new Date());
+                scheduleMidnightUpdate();
+            }, nextMidnight.getTime() - now.getTime());
+        };
+
+        scheduleMidnightUpdate();
+        return () => window.clearTimeout(timeoutId);
+    }, []);
+
     useEffect(() => {
         setPageHeader({
             shortTitle: "Ensalamento",
@@ -30,7 +50,7 @@ export function HomePage() {
 
     return (
         <div className="flex flex-1 flex-col">
-            <Header />
+            <Header currentDate={currentDate} />
             <HomeCalendar currentDate={currentDate} />
         </div>
     );
@@ -53,7 +73,12 @@ const semester = [
     { label: "2027.1", value: "2027.1" },
 ];
 
-function Header() {
+function Header({ currentDate }: { currentDate: Date }) {
+    const calendar = new Calendar(currentDate);
+    const firstDay = calendar.daysOfWeek[0];
+    const lastDay = calendar.daysOfWeek.at(-1)!;
+    const rangeLabel = formatDateRange(firstDay, lastDay);
+
     return (
         <div className="flex gap-3">
             <InputSelect label="Bloco:" items={blocks} defaultValue={blocks[0].value} />
@@ -64,7 +89,7 @@ function Header() {
                     <PaginationItem>
                         <PaginationPrevious className="border-paragrafo/50 flex h-fit items-center justify-center rounded-full bg-white p-2.5!" />
                     </PaginationItem>
-                    <span className="px-2 text-sm font-bold">26 ou a 31 out 2026</span>
+                    <span className="px-2 text-sm font-bold">{rangeLabel}</span>
                     <PaginationItem>
                         <PaginationNext className="border-paragrafo/50 flex h-fit items-center justify-center rounded-full bg-white p-2.5!" />
                     </PaginationItem>
@@ -73,4 +98,23 @@ function Header() {
             <Button className="bg-green-nassau ml-auto h-11 w-full max-w-45 font-bold">Nova Alocação</Button>
         </div>
     );
+}
+
+function formatDateRange(startDate: Date, endDate: Date) {
+    const startMonth = startDate.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+    const endMonth = endDate.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+    const startDay = startDate.getDate();
+    const endDay = endDate.getDate();
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
+
+    if (startYear !== endYear) {
+        return `${startDay} ${startMonth} ${startYear} a ${endDay} ${endMonth} ${endYear}`;
+    }
+
+    if (startDate.getMonth() !== endDate.getMonth()) {
+        return `${startDay} ${startMonth} a ${endDay} ${endMonth} ${endYear}`;
+    }
+
+    return `${startDay} a ${endDay} ${endMonth} ${endYear}`;
 }

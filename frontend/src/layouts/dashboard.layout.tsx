@@ -10,7 +10,7 @@ export function DashboardLayout() {
             <SidebarInset>
                 <div className="bg-foreground-nassau flex min-h-screen flex-col">
                     <AdminHeader />
-                    <div className="flex flex-1 flex-col px-4 pb-6 sm:px-6 lg:px-8">
+                    <div className="flex flex-1 px-4 pb-6 sm:px-6 lg:px-8">
                         <Outlet />
                     </div>
                 </div>

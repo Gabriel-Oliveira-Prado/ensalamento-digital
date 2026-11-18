@@ -1,8 +1,9 @@
 import { Calendar } from "@/utils/date";
 import { Plus } from "lucide-react";
 import { Fragment } from "react";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Card } from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Item, ItemActions, ItemContent, ItemTitle } from "./ui/item";
 
 interface HomeCalendarProps {
@@ -21,9 +22,8 @@ const allocation = [
         id: 1,
         horario: {
             id: 1,
-            dia: "2026-11-09",
-            hora_inicio: "19:00",
-            hora_fim: "20:40",
+            dia: "2026-11-18",
+            time: { start: "08:20", end: "09:10" },
         },
         professor: {
             id: 1,
@@ -88,9 +88,23 @@ export function HomeCalendar({ currentDate }: HomeCalendarProps) {
                             <span>{time.start}</span>
                             <span className="text-apoio/60 font-normal">{time.end}</span>
                         </div>
-                        {c.daysOfWeek.map(() => (
-                            <EmptyCard />
-                        ))}
+                        {c.daysOfWeek.map((date) => {
+                            const key = `${time.start}-${formatDate(date)}`;
+                            const currAllocation = allocation.find(
+                                ({ horario }) => horario.dia === formatDate(date) && horario.time.start === time.start
+                            );
+
+                            return currAllocation ? (
+                                <AllocationCard
+                                    key={key}
+                                    name={currAllocation.disciplina.nome}
+                                    teacher={currAllocation.professor.nome}
+                                    room={currAllocation.sala.nome}
+                                />
+                            ) : (
+                                <EmptyCard key={key} />
+                            );
+                        })}
                     </Fragment>
                 ))}
             </div>
@@ -110,8 +124,31 @@ function EmptyCard() {
     );
 }
 
-function AllocationCard() {
+interface AllocationCardProps {
+    name: string | undefined;
+    teacher: string | undefined;
+    room: string;
+}
+
+function AllocationCard({ name, teacher, room }: AllocationCardProps) {
     return (
-        <Card className="border-paragrafo flex h-full flex-1 cursor-pointer items-center justify-center border-2 bg-white"></Card>
+        <Card className="border-paragrafo relative bg-white">
+            <CardHeader>
+                <CardTitle>{name}</CardTitle>
+                <CardDescription>{teacher}</CardDescription>
+            </CardHeader>
+            <CardContent className="mt-auto">
+                <Badge className="w-full">{room} · Bloco C</Badge>
+            </CardContent>
+            <div className="bg-green-nassau absolute top-0 left-0 h-full w-1" />
+        </Card>
     );
+}
+
+function formatDate(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
 }
