@@ -14,6 +14,7 @@ export const usePageHeaderStore = create<HeaderStore>((set) => ({
         shortDescription: "Semestre 2026.2",
         spanDescription: "· alocação de turmas por dia e horário",
     },
+
     setPageHeader: (data) => set((state) => ({ ...state, metadata: { ...data } })),
     resetPageHeader: () => set({ metadata: { shortTitle: "Dashboard", shortDescription: "" } }),
 }));
