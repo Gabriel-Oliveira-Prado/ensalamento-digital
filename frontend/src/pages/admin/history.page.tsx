@@ -8,8 +8,8 @@ export function HistoryPage() {
     useEffect(() => {
         setPageHeader({
             shortTitle: "Histórico",
-            shortDescription: "sla porra",
-            spanDescription: "vtmnc ai",
+            shortDescription: "ammmmm",
+            spanDescription: "sei la",
         });
 
         return () => {

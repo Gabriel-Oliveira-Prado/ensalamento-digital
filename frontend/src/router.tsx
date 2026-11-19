@@ -38,11 +38,11 @@ export const router = createBrowserRouter([
                                     },
                                     {
                                         path: "solicitacoes",
-                                        element: <RequestPage />
+                                        element: <RequestPage />,
                                     },
                                     {
                                         path: "historico",
-                                        element: <HistoryPage />
+                                        element: <HistoryPage />,
                                     }
                                 ],
                             },
