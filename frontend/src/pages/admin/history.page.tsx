@@ -8,8 +8,8 @@ export function HistoryPage() {
     useEffect(() => {
         setPageHeader({
             shortTitle: "Histórico",
-            shortDescription: "Quem trocou, quando e por quê. ",
-            spanDescription: "Cada troca avisa os professores afetados.",
+            shortDescription: "Consulte o histórico de alterações.",
+            spanDescription: "Acompanhe as alterações realizadas nas salas, horários e alocações",
         });
 
         return () => {
@@ -17,5 +17,5 @@ export function HistoryPage() {
         };
     }, [setPageHeader, resetPageHeader]);
 
-    return <h1>am tu e lok kkkkk</h1>;
+    return <h1>Histórico de alterações</h1>;
 }

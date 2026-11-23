@@ -1,15 +1,97 @@
-import { Card } from "@/components/ui/card";
-import { Grid } from "@/components/ui/contentgrid";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { api } from "@/services/api";
 import { usePageHeaderStore } from "@/stores/header.store";
-import { cn } from "cn";
-import { ChevronDown } from "lucide-react";
-import { useEffect, useState } from "react";
-import mockdata from "../../../mock/cadastro.json";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+
+type ApiRecord = { id: number } & Record<string, string | number>;
+
+type FieldConfig = {
+    name: string;
+    label: string;
+    type?: "text" | "number" | "date" | "time";
+};
+
+type EntityConfig = {
+    key: string;
+    label: string;
+    endpoint: string;
+    fields: FieldConfig[];
+};
+
+const entities: EntityConfig[] = [
+    {
+        key: "recursos",
+        label: "Recursos",
+        endpoint: "/ensalamento/recursos/",
+        fields: [{ name: "nome", label: "Nome" }],
+    },
+    {
+        key: "salas",
+        label: "Salas",
+        endpoint: "/ensalamento/salas/",
+        fields: [
+            { name: "nome", label: "Nome" },
+            { name: "capacidade", label: "Capacidade", type: "number" },
+            { name: "tipo", label: "Tipo" },
+        ],
+    },
+    {
+        key: "disciplinas",
+        label: "Disciplinas",
+        endpoint: "/ensalamento/disciplinas/",
+        fields: [{ name: "nome", label: "Nome" }],
+    },
+    {
+        key: "turmas",
+        label: "Turmas",
+        endpoint: "/ensalamento/turmas/",
+        fields: [
+            { name: "qtd_aluno", label: "Quantidade de alunos", type: "number" },
+            { name: "ano", label: "Ano", type: "number" },
+            { name: "periodo", label: "Período", type: "number" },
+        ],
+    },
+    {
+        key: "horarios",
+        label: "Horários",
+        endpoint: "/ensalamento/horarios/",
+        fields: [
+            { name: "dia", label: "Dia", type: "date" },
+            { name: "hora_inicio", label: "Início", type: "time" },
+            { name: "hora_fim", label: "Fim", type: "time" },
+        ],
+    },
+];
+
+function emptyForm(config: EntityConfig) {
+    return Object.fromEntries(config.fields.map((field) => [field.name, ""]));
+}
 
 export function RegisterPage() {
-    const setPageHeader = usePageHeaderStore((s) => s.setPageHeader);
-    const resetPageHeader = usePageHeaderStore((s) => s.resetPageHeader);
+    const setPageHeader = usePageHeaderStore((state) => state.setPageHeader);
+    const resetPageHeader = usePageHeaderStore((state) => state.resetPageHeader);
+    const [selectedKey, setSelectedKey] = useState(entities[0].key);
+    const [form, setForm] = useState<Record<string, string>>(() => emptyForm(entities[0]));
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState("");
+    const [error, setError] = useState("");
+
+    const config = useMemo(() => entities.find((entity) => entity.key === selectedKey) ?? entities[0], [selectedKey]);
+    const {
+        data: records = [],
+        isLoading: loading,
+        isError: queryFailed,
+        refetch,
+    } = useQuery({
+        queryKey: ["cadastros", config.endpoint],
+        queryFn: async () => (await api.get<ApiRecord[]>(config.endpoint)).data,
+    });
 
     const [mockpage, setmockpage] = useState("blocos");
     const [checkboxSelections, setCheckboxSelections] = useState<Record<string, boolean[]>>({});
@@ -17,149 +99,214 @@ export function RegisterPage() {
     useEffect(() => {
         setPageHeader({
             shortTitle: "Cadastros",
-            shortDescription: "Blocos, salas, recursos, ",
-            spanDescription: "cursos, disciplinas, turmas, professores e horários",
+            shortDescription: "Registre e edite informações",
+            spanDescription: " diretamente na API",
         });
 
-        return () => {
-            resetPageHeader();
-        };
+        return () => resetPageHeader();
     }, [setPageHeader, resetPageHeader]);
 
-    const registertable = () => {
-        const model = mockdata[mockpage as keyof typeof mockdata][0];
+    function changeEntity(entity: EntityConfig) {
+        setSelectedKey(entity.key);
+        setForm(emptyForm(entity));
+        setEditingId(null);
+        setMessage("");
+        setError("");
+    }
 
-        return (
-            <div className="flex flex-col gap-3">
-                {Object.entries(model).map((value, index) => {
-                    const labelstyle = "text-black-nassau font-bold text-[12px] mb-3";
+    function cancelEditing() {
+        setEditingId(null);
+        setForm(emptyForm(config));
+        setError("");
+    }
 
-                    if (value[0] == "titulo") {
-                        return (
-                            <div key={index}>
-                                <h1 className="text-[17px] font-bold">{value[1].titulo}</h1>
-                                <p className="text-apoio text-[10px] font-light"> {value[1].desc}</p>
-                            </div>
-                        );
-                    }
+    function startEditing(record: ApiRecord) {
+        const values = Object.fromEntries(config.fields.map((field) => [field.name, String(record[field.name] ?? "")]));
+        setForm(values);
+        setEditingId(record.id);
+        setMessage("");
+        setError("");
+    }
 
-                    if (["text", "number"].includes(value[1].type)) {
-                        return (
-                            <div key={index}>
-                                <h1 className={cn(labelstyle)}>{value[0]}</h1>
-                                <Input
-                                    type={value[1].type}
-                                    placeholder={value[1].placeholder}
-                                    className="border border-[#E2E8F0] bg-[#F1F5F9] p-5 text-2xl text-[#94A3B8]"
-                                ></Input>
-                            </div>
-                        );
-                    }
+    async function submit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setSaving(true);
+        setError("");
+        setMessage("");
 
-                    if (value[1].type == "radio") {
-                        return (
-                            <div key={index}>
-                                <h1 className={cn(labelstyle)}>{value[0]}</h1>
-                                <div className="text-black-nassau flex cursor-pointer flex-row items-center justify-between rounded-lg border border-[#E2E8F0] p-3 text-[12px] font-bold capitalize">
-                                    {value[1].values[0]}
-                                    <ChevronDown className="text-black-nassau" size={20}></ChevronDown>
-                                </div>
-                            </div>
-                        );
-                    }
-
-                    if (value[1].type == "checkbox") {
-                        const selectionKey = `${mockpage}:${value[0]}`;
-                        const checklist = checkboxSelections[selectionKey] ?? value[1].values.map(() => false);
-
-                        return (
-                            <div key={index}>
-                                <h1 className={cn(labelstyle)}>{value[0]}</h1>
-                                <div className="flex flex-row gap-3">
-                                    {value[1].values.map((button = "", index = 0) => {
-                                        const style = checklist[index]
-                                            ? "bg-green-nassau text-white border border-transparent"
-                                            : "border border-paragrafo";
-
-                                        return (
-                                            <button
-                                                className={cn(style + " rounded-2xl p-1 px-3 text-[12px]")}
-                                                onClick={() => {
-                                                    setCheckboxSelections((current) => ({
-                                                        ...current,
-                                                        [selectionKey]: checklist.map((selected, itemIndex) =>
-                                                            itemIndex === index ? !selected : selected
-                                                        ),
-                                                    }));
-                                                }}
-                                                key={index}
-                                            >
-                                                {button}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <p className="text-apoio mt-3 text-[12px] font-light">{value[1].placeholder}</p>
-                            </div>
-                        );
-                    }
-                })}
-
-                <div className="flex flex-row gap-3">
-                    <button className="text-black-nassau border-paragrafo w-34 cursor-pointer rounded-lg border p-3.5 px-0 font-bold">
-                        cancelar
-                    </button>
-                    <button className="bg-green-nassau flex-1 cursor-pointer rounded-lg border border-transparent p-3.5 px-0 font-bold text-white">
-                        salvar {mockpage}
-                    </button>
-                </div>
-            </div>
+        const payload = Object.fromEntries(
+            config.fields.map((field) => [
+                field.name,
+                field.type === "number" ? Number(form[field.name]) : form[field.name],
+            ])
         );
-    };
 
-    const menu = () => {
-        return (
-            <div className="border-b[#3DDE3EC] flex h-10 flex-row border-b">
-                {Object.keys(mockdata).map((page, index) => {
-                    let style = "cursor-pointer w-23 capitalize border-b-3 text-sm";
+        try {
+            if (editingId) {
+                await api.patch(`${config.endpoint}${editingId}/`, payload);
+                setMessage("Registro atualizado com sucesso.");
+            } else {
+                await api.post(config.endpoint, payload);
+                setMessage("Registro criado com sucesso.");
+            }
 
-                    if (mockpage == page) {
-                        style += " font-bold border-b-green-nassau";
-                    } else {
-                        style += " text-[#5B6B88] border-b-transparent";
-                    }
+            setEditingId(null);
+            setForm(emptyForm(config));
+            await refetch();
+        } catch (requestError) {
+            const responseData = axios.isAxiosError(requestError) ? requestError.response?.data : null;
+            setError(responseData ? JSON.stringify(responseData) : "Não foi possível salvar o registro.");
+        } finally {
+            setSaving(false);
+        }
+    }
 
-                    return (
-                        <button className={cn(style)} key={index} onClick={() => setmockpage(page)}>
-                            {page}
-                        </button>
-                    );
-                })}
-            </div>
-        );
-    };
+    async function remove(record: ApiRecord) {
+        if (!window.confirm(`Excluir o registro ${record.id}?`)) return;
+
+        setError("");
+        setMessage("");
+
+        try {
+            await api.delete(`${config.endpoint}${record.id}/`);
+            setMessage("Registro excluído com sucesso.");
+            await refetch();
+        } catch {
+            setError("Não foi possível excluir. O registro pode estar sendo usado em outro cadastro.");
+        }
+    }
 
     return (
-        <div className="mb-4 w-full px-8 ring-0">
-            {menu()}
-            <div className="mt-8 flex flex-row gap-8">
-                <Card className="flex-2 ring-0">
-                    <div className="flex flex-row gap-5 px-5">
-                        <Input
-                            placeholder={"Buscar " + mockpage}
-                            className="bg-foreground-nassau w-60 p-5 text-[#8A97AE]"
-                        ></Input>
-                        <button className="flex w-40 cursor-pointer flex-row items-center justify-center rounded-lg border border-[#DDE3EC] px-3 text-[12px] font-bold text-[#0F1F3D]">
-                            Categoria: Todas
-                            <ChevronDown className="ml-auto" size={20}></ChevronDown> {/*TODO: Codificar um filtro*/}
-                        </button>
-                        <button className="bg-green-nassau ml-auto cursor-pointer rounded-lg px-6 text-[13px] text-white">
-                            Novo elemento {/*TODO: Modificar o conteúdo dependendo do código*/}
-                        </button>
-                    </div>
-                    <Grid gridData={mockdata[mockpage as keyof typeof mockdata].slice(1) as never[]} />
+        <div className="space-y-5">
+            <div className="flex flex-wrap gap-2">
+                {entities.map((entity) => (
+                    <Button
+                        key={entity.key}
+                        type="button"
+                        variant={entity.key === selectedKey ? "default" : "outline"}
+                        className={entity.key === selectedKey ? "bg-green-nassau hover:bg-green-nassau/85" : ""}
+                        onClick={() => changeEntity(entity)}
+                    >
+                        {entity.label}
+                    </Button>
+                ))}
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
+                <Card className="h-fit border-slate-200 bg-white shadow-sm">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            {editingId ? <Pencil className="size-5" /> : <Plus className="size-5" />}
+                            {editingId ? "Editar" : "Novo"} {config.label.toLowerCase()}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <form className="space-y-4" onSubmit={submit}>
+                            {config.fields.map((field) => (
+                                <label
+                                    key={field.name}
+                                    className="block space-y-1.5 text-sm font-medium text-slate-700"
+                                >
+                                    <span>{field.label}</span>
+                                    <Input
+                                        required
+                                        min={field.type === "number" ? 0 : undefined}
+                                        type={field.type ?? "text"}
+                                        value={form[field.name] ?? ""}
+                                        onChange={(event) =>
+                                            setForm((current) => ({
+                                                ...current,
+                                                [field.name]: event.target.value,
+                                            }))
+                                        }
+                                    />
+                                </label>
+                            ))}
+
+                            <div className="flex gap-2 pt-2">
+                                <Button
+                                    disabled={saving}
+                                    type="submit"
+                                    className="bg-green-nassau hover:bg-green-nassau/85 flex-1"
+                                >
+                                    {saving ? "Salvando..." : "Salvar"}
+                                </Button>
+                                {editingId && (
+                                    <Button type="button" variant="outline" onClick={cancelEditing}>
+                                        <X className="size-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        </form>
+                    </CardContent>
                 </Card>
-                <Card className="flex-1 px-6 ring-0">{registertable()}</Card>
+
+                <Card className="border-slate-200 bg-white shadow-sm">
+                    <CardHeader>
+                        <CardTitle className="text-lg">{config.label} cadastrados</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {message && <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}
+                        {(error || queryFailed) && (
+                            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+                                {error || "Não foi possível carregar os registros."}
+                            </p>
+                        )}
+
+                        {loading ? (
+                            <p className="py-8 text-center text-sm text-slate-500">Carregando...</p>
+                        ) : records.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-slate-500">Nenhum registro cadastrado.</p>
+                        ) : (
+                            <div className="overflow-x-auto rounded-lg border border-slate-200">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-600">
+                                        <tr>
+                                            <th className="px-4 py-3 font-semibold">ID</th>
+                                            {config.fields.map((field) => (
+                                                <th key={field.name} className="px-4 py-3 font-semibold">
+                                                    {field.label}
+                                                </th>
+                                            ))}
+                                            <th className="px-4 py-3 text-right font-semibold">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {records.map((record) => (
+                                            <tr key={record.id} className="hover:bg-slate-50">
+                                                <td className="px-4 py-3 text-slate-500">{record.id}</td>
+                                                {config.fields.map((field) => (
+                                                    <td key={field.name} className="px-4 py-3 text-slate-800">
+                                                        {String(record[field.name] ?? "—")}
+                                                    </td>
+                                                ))}
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button
+                                                            size="icon-sm"
+                                                            variant="ghost"
+                                                            onClick={() => startEditing(record)}
+                                                        >
+                                                            <Pencil className="size-4" />
+                                                        </Button>
+                                                        <Button
+                                                            size="icon-sm"
+                                                            variant="ghost"
+                                                            className="text-red-600 hover:text-red-700"
+                                                            onClick={() => void remove(record)}
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );
