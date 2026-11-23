@@ -8,8 +8,8 @@ export function HistoryPage() {
     useEffect(() => {
         setPageHeader({
             shortTitle: "Histórico",
-            shortDescription: "ammmmm",
-            spanDescription: "sei la",
+            shortDescription: "Quem trocou, quando e por quê. ",
+            spanDescription: "Cada troca avisa os professores afetados.",
         });
 
         return () => {

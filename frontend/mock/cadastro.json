@@ -1,0 +1,793 @@
+{
+    "blocos": [
+        {
+            "titulo": {
+                "titulo": "novo bloco",
+                "desc": "defina o nome, campus e andares."
+            },
+            "nome do bloco": {
+                "type": "text",
+                "placeholder": "Ex: Bloco A"
+            },
+            "campus": {
+                "type": "radio",
+                "values": [
+                    "campus central",
+                    "campus sul",
+                    "campus norte"
+                ]
+            },
+            "andares": {
+                "type": "number",
+                "placeholder": "Ex: 2"
+            },
+            "código": {
+                "type": "text",
+                "placeholder": "Ex: BL-A"
+            },
+            "status": {
+                "type": "checkbox",
+                "values": [
+                    "ativo",
+                    "em obra",
+                    "inativo"
+                ],
+                "placeholder": "Blocos inativos não recebem ensalamento."
+            }
+        },
+        {
+            "bloco": "bloco A",
+            "campus": "campus central",
+            "salas": 12,
+            "andares": 3,
+            "status": [
+                "ativo"
+            ]
+        },
+        {
+            "bloco": "bloco B",
+            "campus": "campus central",
+            "salas": 15,
+            "andares": 1,
+            "status": [
+                "em obra"
+            ]
+        },
+        {
+            "bloco": "bloco C",
+            "campus": "campus norte",
+            "salas": 9,
+            "andares": 3,
+            "status": [
+                "inativo"
+            ]
+        },
+        {
+            "bloco": "bloco D",
+            "campus": "campus norte",
+            "salas": 8,
+            "andares": 2,
+            "status": [
+                "inativo"
+            ]
+        },
+        {
+            "bloco": "bloco E",
+            "campus": "campus norte",
+            "salas": 20,
+            "andares": 3,
+            "status": [
+                "ativo"
+            ]
+        },
+        {
+            "bloco": "bloco F",
+            "campus": "campus central",
+            "salas": 14,
+            "andares": 2,
+            "status": [
+                "em obra"
+            ]
+        },
+        {
+            "bloco": "anexo",
+            "campus": "campus norte",
+            "salas": 5,
+            "andares": 4,
+            "status": [
+                "ativo"
+            ]
+        }
+    ],
+    "salas": [
+        {
+            "titulo": {
+                "titulo": "Nova sala",
+                "desc": "Defina capacidade e recursos da sala."
+            },
+            "Número ou nome": {
+                "type": "text",
+                "placeholder": "Ex: 204"
+            },
+            "Bloco": {
+                "type": "radio",
+                "values": [
+                    "bloco A",
+                    "bloco B",
+                    "bloco C"
+                ]
+            },
+            "Tipo": {
+                "type": "radio",
+                "values": [
+                    "sala de aula",
+                    "laboratório",
+                    "auditório"
+                ]
+            },
+            "Capacidade": {
+                "type": "number",
+                "placeholder": "Ex: 45"
+            },
+            "Recursos exigíveis": {
+                "type": "checkbox",
+                "values": [
+                    "projetor",
+                    "ar-cond.",
+                    "laboratório"
+                ],
+                "placeholder": "disciplinas só entram em salas com os recursos exigidos."
+            }
+        },
+        {
+            "sala": "28",
+            "bloco": "bloco A",
+            "tipo": "sala de aula",
+            "cap.": 50,
+            "recursos": [
+                "projetor",
+                "som"
+            ]
+        },
+        {
+            "sala": "lab 1",
+            "bloco": "bloco B",
+            "tipo": "laboratório",
+            "cap.": 38,
+            "recursos": [
+                "computadores",
+                "projetor"
+            ]
+        },
+        {
+            "sala": "19",
+            "bloco": "bloco B",
+            "tipo": "sala de aula",
+            "cap.": 30,
+            "recursos": [
+                "ar-cond."
+            ]
+        },
+        {
+            "sala": "Lab 3",
+            "bloco": "Bloco B",
+            "tipo": "laboratório",
+            "cap": 20,
+            "recursos": [
+                "ar-cond.",
+                "computadores"
+            ]
+        },
+        {
+            "sala": "8",
+            "bloco": "Bloco A",
+            "tipo": "sala de aula",
+            "cap": 40,
+            "recursos": []
+        },
+        {
+            "sala": "15",
+            "bloco": "Bloco B",
+            "tipo": "sala de aula",
+            "cap": 50,
+            "recursos": [
+                "ar-cond.",
+                "projetor",
+                "som",
+                "computadores"
+            ]
+        },
+        {
+            "sala": "auditório",
+            "bloco": "Bloco B",
+            "tipo": "auditório",
+            "cap": 80,
+            "recursos": [
+                "ar-cond.",
+                "projetor",
+                "som"
+            ]
+        }
+    ],
+    "recursos": [
+        {
+            "titulo": {
+                "titulo": "novo recurso",
+                "desc": "cadastre um recurso disponível nas salas."
+            },
+            "nome do recurso": {
+                "type": "text",
+                "placeholder": "ex: Projetor"
+            },
+            "categoria": {
+                "type": "radio",
+                "values": [
+                    "climatização",
+                    "audiovisual",
+                    "informática",
+                    "estrutura"
+                ]
+            },
+            "quantidade total": {
+                "type": "number",
+                "placeholder": "Ex: 42"
+            },
+            "descrição": {
+                "type": "text",
+                "placeholder": "opcional"
+            },
+            "cor da etiqueta": {
+                "type": "checkbox",
+                "values": [
+                    "teal",
+                    "roxo",
+                    "azul",
+                    "laranja"
+                ],
+                "placeholder": "a cor identifica os recursos nas listas."
+            }
+        },
+        {
+            "recurso": "projetor",
+            "categoria": "audiovisual",
+            "salas": 42,
+            "descrição": "projeção multimídia"
+        },
+        {
+            "recurso": "ar-cond.",
+            "categoria": "climatização",
+            "salas": 30,
+            "descrição": "Split 18.000 BTU"
+        },
+        {
+            "recurso": "computadores",
+            "categoria": "informática",
+            "salas": 4,
+            "descrição": "Bancada com PCs"
+        },
+        {
+            "recurso": "som",
+            "categoria": "audiovisual",
+            "salas": 6,
+            "descrição": "Caixas e microfone."
+        },
+        {
+            "recurso": "laboratório",
+            "categoria": "estrutura",
+            "salas": 5,
+            "descrição": "Bancadas e pias"
+        },
+        {
+            "recurso": "quadro interativo",
+            "categoria": "audiovisual",
+            "salas": 4,
+            "descrição": "lousa digital touch"
+        },
+        {
+            "recurso": "Acessibilidade",
+            "categoria": "estrutura",
+            "salas": 28,
+            "descrição": "Rampa e piso tátil"
+        }
+    ],
+    "cursos": [
+        {
+            "titulo": {
+                "titulo": "Novo curso",
+                "desc": "Informe os dados básicos do curso."
+            },
+            "Nome do curso": {
+                "type": "text",
+                "placeholder": "Ex: Direito"
+            },
+            "Código": {
+                "type": "text",
+                "placeholder": "Ex: DIR01"
+            },
+            "Turno": {
+                "type": "radio",
+                "values": [
+                    "Diurno",
+                    "Noturno"
+                ]
+            },
+            "Periodos": {
+                "type": "number",
+                "placeholder": "Ex: 10"
+            },
+            "Recursos padrão": {
+                "type": "checkbox",
+                "values": [
+                    "ar-cond.",
+                    "projetor",
+                    "laboratório"
+                ],
+                "placeholder": "Aplicados as disciplinas ao criar."
+            }
+        },
+        {
+            "curso": "direito",
+            "código": "DIR01",
+            "turno": [
+                "noturno"
+            ],
+            "períodos": 10,
+            "alunos": 820
+        },
+        {
+            "curso": "administração",
+            "código": "ADM02",
+            "turno": [
+                "noturno"
+            ],
+            "períodos": 8,
+            "alunos": 540
+        },
+        {
+            "curso": "Enfermagem",
+            "código": "ENF03",
+            "turno": [
+                "diurno"
+            ],
+            "períodos": 10,
+            "alunos": 450
+        },
+        {
+            "curso": "Eng. civil",
+            "código": "ENC04",
+            "turno": [
+                "diurno"
+            ],
+            "períodos": 10,
+            "alunos": 380
+        },
+        {
+            "curso": "Psicologia",
+            "código": "PSI05",
+            "turno": [
+                "diurno"
+            ],
+            "períodos": 10,
+            "alunos": 460
+        },
+        {
+            "curso": "Sist. de Informação",
+            "código": "SIS06",
+            "turno": [
+                "noturno"
+            ],
+            "períodos": 8,
+            "alunos": 210
+        },
+        {
+            "curso": "Arquitetura",
+            "código": "ARQ07",
+            "turno": [
+                "diurno"
+            ],
+            "períodos": 10,
+            "alunos": 290
+        }
+    ],
+    "disciplinas": [
+        {
+            "titulo": {
+                "titulo": "Nova disciplina",
+                "desc": "Defina carga horária e recursos exigidos."
+            },
+            "Nome da disciplina": {
+                "type": "text",
+                "placeholder": "Ex: Cálculo II"
+            },
+            "Curso": {
+                "type": "radio",
+                "values": [
+                    "Eng. Civil",
+                    "Psicologia",
+                    "Engenharia",
+                    "Arquitetura"
+                ]
+            },
+            "Carga horária": {
+                "type": "number",
+                "placeholder": "Ex: 80"
+            },
+            "Período": {
+                "type": "number",
+                "placeholder": "Ex: 2"
+            },
+            "Recursos exigidos": {
+                "type": "checkbox",
+                "values": [
+                    "projetor",
+                    "ar-cond.",
+                    "laboratório"
+                ],
+                "placeholder": "Só entra em salas com esse recurso."
+            }
+        },
+        {
+            "disciplina": "Direito Civil I",
+            "curso": "direito",
+            "C.H.": "60h",
+            "Recursos exigidos": [
+                "projetor"
+            ]
+        },
+        {
+            "disciplina": "Cálculo II",
+            "curso": "Eng. civil",
+            "C.H.": "80h",
+            "Recursos exigidos": [
+                "projetor",
+                "ar-cond."
+            ]
+        },
+        {
+            "disciplina": "Anatomia",
+            "curso": "Enfermagem",
+            "C.H.": "80h",
+            "Recursos exigidos": [
+                "laboratório"
+            ]
+        },
+        {
+            "disciplina": "Algoritmos",
+            "curso": "Sist. Inform.",
+            "C.H.": "60h",
+            "Recursos exigidos": [
+                "computadores",
+                "projetor"
+            ]
+        },
+        {
+            "disciplina": "Gestão de pessoas",
+            "curso": "administração",
+            "C.H.": "40h",
+            "Recursos exigidos": [
+                "projetor"
+            ]
+        },
+        {
+            "disciplina": "Psicologia social",
+            "curso": "Psicologia",
+            "C.H.": "60h",
+            "Recursos exigidos": [
+                "projetor"
+            ]
+        },
+        {
+            "disciplina": "Desenho técnico",
+            "curso": "Arquitetura",
+            "C.H.": "60h",
+            "Recursos exigidos": [
+                "ar-cond."
+            ]
+        }
+    ],
+    "turmas": [
+        {
+            "titulo": {
+                "titulo": "Nova turma",
+                "desc": "Vincule disciplina, professor e turno."
+            },
+            "código da turma": {
+                "type": "text",
+                "placeholder": "Ex: DIR-3A"
+            },
+            "disciplina": {
+                "type": "radio",
+                "values": [
+                    "Direito Civil I",
+                    "Gestão de Pessoas",
+                    "Algoritmos"
+                ]
+            },
+            "Professor": {
+                "type": "radio",
+                "values": [
+                    "Ana Lima",
+                    "Carlos Souza",
+                    "Marta Reis"
+                ]
+            },
+            "alunos": {
+                "type": "number",
+                "placeholder": "Ex: 54"
+            },
+            "turno": {
+                "type": "checkbox",
+                "values": [
+                    "diurno",
+                    "noturno"
+                ],
+                "placeholder": "A turma é ensalada conforme o turno."
+            }
+        },
+        {
+            "turma": "DIR-3A",
+            "disciplina": "Direito Civil I",
+            "professor": "Ana Lima",
+            "alunos": 52,
+            "turno": [
+                "noturno"
+            ]
+        },
+        {
+            "turma": "ENC-2B",
+            "disciplina": "Cálculo II",
+            "professor": "Carlos Souza",
+            "alunos": 45,
+            "turno": [
+                "diurno"
+            ]
+        },
+        {
+            "turma": "ENF-1A",
+            "disciplina": "Anatomia",
+            "professor": "Marta Reis",
+            "alunos": 28,
+            "turno": [
+                "diurno"
+            ]
+        },
+        {
+            "turma": "SIS-1A",
+            "disciplina": "Algoritmos",
+            "professor": "João Pedro",
+            "alunos": 30,
+            "turno": [
+                "noturno"
+            ]
+        },
+        {
+            "turma": "ADM-4C",
+            "disciplina": "Gestão de pessoas",
+            "professor": "Paula Matos",
+            "alunos": 38,
+            "turno": [
+                "diurno"
+            ]
+        },
+        {
+            "turma": "PSI-2A",
+            "disciplina": "Psicologia social",
+            "professor": "Renata Dias",
+            "alunos": 41,
+            "turno": [
+                "diurno"
+            ]
+        },
+        {
+            "turma": "ARQ-3A",
+            "disciplina": "Desenho técnico",
+            "professor": "Felipe Costa",
+            "alunos": 35,
+            "turno": [
+                "diurno"
+            ]
+        }
+    ],
+    "professores": [
+        {
+            "titulo": {
+                "titulo": "Novo professor(a)",
+                "desc": "Cadastre dados e disponibilidade."
+            },
+            "Nome completo": {
+                "type": "text",
+                "placeholder": "Ex: Ana Lima"
+            },
+            "Departamento": {
+                "type": "radio",
+                "values": [
+                    "Direito",
+                    "Psicologia",
+                    "Arquitetura"
+                ]
+            },
+            "C.H. semanal": {
+                "type": "number",
+                "placeholder": "Ex: 20"
+            },
+            "E-mail": {
+                "type": "text",
+                "placeholder": "Ex: nome@uninassau.edu.br"
+            },
+            "Disponibilidade": {
+                "type": "checkbox",
+                "values": [
+                    "diurno",
+                    "noturno",
+                    "sábado"
+                ],
+                "placeholder": "Define em quais turnos pode lecionar."
+            }
+        },
+        {
+            "professor": "Ana Lima",
+            "departamento": "Direito",
+            "C.H. semanal": "20h",
+            "Disponibilidade": [
+                "noturno"
+            ]
+        },
+        {
+            "professor": "Carlos Souza",
+            "departamento": "Exatas",
+            "C.H. semanal": "24h",
+            "Disponibilidade": [
+                "diurno"
+            ]
+        },
+        {
+            "professor": "Marta Reis",
+            "departamento": "Saúde",
+            "C.H. semanal": "16h",
+            "Disponibilidade": [
+                "diurno"
+            ]
+        },
+        {
+            "professor": "João Pedro",
+            "departamento": "Tecnologia",
+            "C.H. semanal": "20h",
+            "Disponibilidade": [
+                "noturno"
+            ]
+        },
+        {
+            "professor": "Paula Matos",
+            "departamento": "Gestão",
+            "C.H. semanal": "12h",
+            "Disponibilidade": [
+                "noturno",
+                "sáb"
+            ]
+        },
+        {
+            "professor": "Renata Dias",
+            "departamento": "Humanas",
+            "C.H. semanal": "18h",
+            "Disponibilidade": [
+                "diurno"
+            ]
+        },
+        {
+            "professor": "Felipe Costa",
+            "departamento": "Arquitetura",
+            "C.H. semanal": "22h",
+            "Disponibilidade": [
+                "diurno",
+                "noturno"
+            ]
+        }
+    ],
+    "horários": [
+        {
+            "titulo": {
+                "titulo": "Novo horário",
+                "desc": "Aloque turma, sala e faixa horária."
+            },
+            "turma": {
+                "type": "radio",
+                "values": [
+                    "DIR-3A"
+                ]
+            },
+            "sala": {
+                "type": "radio",
+                "values": [
+                    204
+                ]
+            },
+            "dia da semana": {
+                "type": "radio",
+                "values": [
+                    "Segunda",
+                    "Terça",
+                    "Quarta",
+                    "Quinta",
+                    "Sexta",
+                    "Sábado"
+                ]
+            },
+            "faixa": {
+                "type": "text",
+                "placeholder": "Ex: 19:00"
+            },
+            "duração": {
+                "type": "checkbox",
+                "values": [
+                    "1 aula",
+                    "2 aulas",
+                    "3 aulas"
+                ],
+                "placeholder": "conflitos de sala e professo são alertados."
+            }
+        },
+        {
+            "dia / faixa": "Seg 19:00",
+            "turma": "DIR-3A",
+            "sala": 204,
+            "professor": "Ana Lima",
+            "status": [
+                "confirmado"
+            ]
+        },
+        {
+            "dia / faixa": "Seg 19:00",
+            "turma": "SIS-1A",
+            "sala": "Lab 1",
+            "professor": "João Pedro",
+            "status": [
+                "confirmado"
+            ]
+        },
+        {
+            "dia / faixa": "Ter 07:30",
+            "turma": "ENC-2B",
+            "sala": 305,
+            "professor": "Carlos Souza",
+            "status": [
+                "pendente"
+            ]
+        },
+        {
+            "dia / faixa": "Ter 07:30",
+            "turma": "ENF-1A",
+            "sala": "Lab 3",
+            "professor": "Marta Reis",
+            "status": [
+                "confirmado"
+            ]
+        },
+        {
+            "dia / faixa": "Qua 21:00",
+            "turma": "ADM-4C",
+            "sala": 101,
+            "professor": "Paula Matos",
+            "status": [
+                "conflito"
+            ]
+        },
+        {
+            "dia / faixa": "Qui 09:30",
+            "turma": "PSI-2A",
+            "sala": 208,
+            "professor": "Renata Dias",
+            "status": [
+                "confirmado"
+            ]
+        },
+        {
+            "dia / faixa": "Sex 07:30",
+            "turma": "ARQ-3A",
+            "sala": 305,
+            "professor": "Felipe Costa",
+            "status": [
+                "pendente"
+            ]
+        }
+    ]
+}
