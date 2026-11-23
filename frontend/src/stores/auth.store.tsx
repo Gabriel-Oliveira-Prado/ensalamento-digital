@@ -3,8 +3,7 @@ import { create } from "zustand";
 // Registra e apaga usuário da memória local.
 
 type User = {
-    login: string;
-    password: string;
+    email: string;
 };
 
 interface AuthStore {

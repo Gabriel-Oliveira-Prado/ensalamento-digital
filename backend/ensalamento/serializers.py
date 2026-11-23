@@ -1,0 +1,229 @@
+from rest_framework import serializers
+
+from .models import (
+    Alocacao,
+    Coordenador,
+    Disciplina,
+    Horario,
+    NecessitaDe,
+    Possui,
+    Professor,
+    Recurso,
+    Sala,
+    Turma,
+)
+
+
+class RecursoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recurso
+        fields = ["id", "nome"]
+        read_only_fields = ["id"]
+
+    def validate_nome(self, value):
+        nome = value.strip()
+
+        if not nome:
+            raise serializers.ValidationError(
+                "O nome do recurso não pode ficar vazio."
+            )
+
+        return nome
+
+
+class SalaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sala
+        fields = ["id", "nome", "capacidade", "tipo"]
+        read_only_fields = ["id"]
+
+    def validate_nome(self, value):
+        nome = value.strip()
+
+        if not nome:
+            raise serializers.ValidationError(
+                "O nome da sala não pode ficar vazio."
+            )
+
+        return nome
+
+    def validate_tipo(self, value):
+        tipo = value.strip()
+
+        if not tipo:
+            raise serializers.ValidationError(
+                "O tipo da sala não pode ficar vazio."
+            )
+
+        return tipo
+
+
+class DisciplinaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Disciplina
+        fields = ["id", "nome"]
+        read_only_fields = ["id"]
+
+    def validate_nome(self, value):
+        nome = value.strip()
+
+        if not nome:
+            raise serializers.ValidationError(
+                "O nome da disciplina não pode ficar vazio."
+            )
+
+        return nome
+
+class TurmaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Turma
+        fields = ["id", "qtd_aluno", "ano", "periodo"]
+        read_only_fields = ["id"]
+
+
+class HorarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Horario
+        fields = ["id", "dia", "hora_inicio", "hora_fim"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        hora_inicio = attrs.get(
+            "hora_inicio",
+            getattr(self.instance, "hora_inicio", None),
+        )
+
+        hora_fim = attrs.get(
+            "hora_fim",
+            getattr(self.instance, "hora_fim", None),
+        )
+
+        if hora_inicio and hora_fim and hora_fim <= hora_inicio:
+            raise serializers.ValidationError(
+                "A hora final deve ser posterior à hora inicial."
+            )
+
+        return attrs
+
+class PossuiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Possui
+        fields = ["id", "sala", "recurso"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        sala = attrs["sala"]
+        recurso = attrs["recurso"]
+
+        if Possui.objects.filter(
+            sala=sala,
+            recurso=recurso,
+        ).exists():
+            raise serializers.ValidationError(
+                "Este recurso já está associado a esta sala."
+            )
+
+        return attrs
+
+class NecessitaDeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NecessitaDe
+        fields = ["id", "disciplina", "recurso"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        disciplina = attrs["disciplina"]
+        recurso = attrs["recurso"]
+
+        if NecessitaDe.objects.filter(
+            disciplina=disciplina,
+            recurso=recurso,
+        ).exists():
+            raise serializers.ValidationError(
+                "Este recurso já é exigido por esta disciplina."
+            )
+
+        return attrs
+
+class AlocacaoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Alocacao
+        fields = [
+            "id",
+            "horario",
+            "professor",
+            "sala",
+            "turma",
+            "disciplina",
+            "coordenador",
+        ]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        horario = attrs.get(
+            "horario",
+            getattr(self.instance, "horario", None),
+        )
+        professor = attrs.get(
+            "professor",
+            getattr(self.instance, "professor", None),
+        )
+        sala = attrs.get(
+            "sala",
+            getattr(self.instance, "sala", None),
+        )
+        turma = attrs.get(
+            "turma",
+            getattr(self.instance, "turma", None),
+        )
+
+        conflitos = Alocacao.objects.all()
+
+        if self.instance:
+            conflitos = conflitos.exclude(
+                id=self.instance.id
+            )
+
+        if horario and sala:
+            conflito_sala = conflitos.filter(
+                sala=sala,
+                horario__dia=horario.dia,
+                horario__hora_inicio__lt=horario.hora_fim,
+                horario__hora_fim__gt=horario.hora_inicio,
+            ).exists()
+
+            if conflito_sala:
+                raise serializers.ValidationError({
+                    "erro": "conflito_sala",
+                    "detalhe": "A sala já está ocupada nesse horário.",
+                })
+
+        if horario and professor:
+            conflito_professor = conflitos.filter(
+                professor=professor,
+                horario__dia=horario.dia,
+                horario__hora_inicio__lt=horario.hora_fim,
+                horario__hora_fim__gt=horario.hora_inicio,
+            ).exists()
+
+            if conflito_professor:
+                raise serializers.ValidationError({
+                    "erro": "conflito_professor",
+                    "detalhe": "O professor já possui uma aula nesse horário.",
+                })
+
+        if horario and turma:
+            conflito_turma = conflitos.filter(
+                turma=turma,
+                horario__dia=horario.dia,
+                horario__hora_inicio__lt=horario.hora_fim,
+                horario__hora_fim__gt=horario.hora_inicio,
+            ).exists()
+
+            if conflito_turma:
+                raise serializers.ValidationError({
+                    "erro": "conflito_turma",
+                    "detalhe": "A turma já possui uma aula nesse horário.",
+                })
+
+        return attrs

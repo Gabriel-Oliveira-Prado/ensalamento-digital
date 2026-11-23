@@ -1,16 +1,11 @@
-
-from django.conf import settings
 from django.db import models
 
 
 class Professor(models.Model):
-    usuario = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="professor",
-    )
-
+    email = models.EmailField(unique=True)
     nome = models.CharField(max_length=150)
+    matricula = models.IntegerField(unique=True)
+    senha = models.CharField(max_length=128)
 
     class Meta:
         db_table = "professor"

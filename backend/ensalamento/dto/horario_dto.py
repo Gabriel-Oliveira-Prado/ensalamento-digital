@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import date, time
 
+
+@dataclass
 class HorarioDTO:
     id: int
     dia: date
