@@ -93,9 +93,6 @@ export function RegisterPage() {
         queryFn: async () => (await api.get<ApiRecord[]>(config.endpoint)).data,
     });
 
-    const [mockpage, setmockpage] = useState("blocos");
-    const [checkboxSelections, setCheckboxSelections] = useState<Record<string, boolean[]>>({});
-
     useEffect(() => {
         setPageHeader({
             shortTitle: "Cadastros",
