@@ -1,4 +1,10 @@
 from rest_framework import generics
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 
 from .models import (
     Alocacao,
@@ -28,51 +34,60 @@ from .serializers import (
 )
 
 
+@extend_schema(tags=["Recursos"], description="Consulta e cadastra recursos das salas.")
 class RecursoListCreateView(generics.ListCreateAPIView):
     queryset = Recurso.objects.all().order_by("nome")
     serializer_class = RecursoSerializer
     permission_classes = [PodeConsultarGerenciarRecursos]
 
 
+@extend_schema(tags=["Recursos"], description="Consulta, atualiza ou exclui um recurso.")
 class RecursoDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Recurso.objects.all()
     serializer_class = RecursoSerializer
     permission_classes = [PodeConsultarGerenciarRecursos]
 
+@extend_schema(tags=["Salas"], description="Consulta e cadastra salas disponíveis para ensalamento.")
 class SalaListCreateView(generics.ListCreateAPIView):
     queryset = Sala.objects.all().order_by("nome")
     serializer_class = SalaSerializer
     permission_classes = [PodeConsultarGerenciarSalas]
 
 
+@extend_schema(tags=["Salas"], description="Consulta, atualiza ou exclui uma sala.")
 class SalaDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Sala.objects.all()
     serializer_class = SalaSerializer
     permission_classes = [PodeConsultarGerenciarSalas]
 
+@extend_schema(tags=["Disciplinas"], description="Consulta e cadastra disciplinas.")
 class DisciplinaListCreateView(generics.ListCreateAPIView):
     queryset = Disciplina.objects.all().order_by("nome")
     serializer_class = DisciplinaSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
 
+@extend_schema(tags=["Disciplinas"], description="Consulta, atualiza ou exclui uma disciplina.")
 class DisciplinaDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Disciplina.objects.all()
     serializer_class = DisciplinaSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
+@extend_schema(tags=["Turmas"], description="Consulta e cadastra turmas.")
 class TurmaListCreateView(generics.ListCreateAPIView):
     queryset = Turma.objects.all().order_by("ano", "periodo", "id")
     serializer_class = TurmaSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
 
+@extend_schema(tags=["Turmas"], description="Consulta, atualiza ou exclui uma turma.")
 class TurmaDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Turma.objects.all()
     serializer_class = TurmaSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
 
+@extend_schema(tags=["Horários"], description="Consulta e cadastra horários de aula.")
 class HorarioListCreateView(generics.ListCreateAPIView):
     queryset = Horario.objects.all().order_by(
         "dia",
@@ -82,11 +97,13 @@ class HorarioListCreateView(generics.ListCreateAPIView):
     permission_classes = [PodeConsultarGerenciarCadastros]
 
 
+@extend_schema(tags=["Horários"], description="Consulta, atualiza ou exclui um horário.")
 class HorarioDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Horario.objects.all()
     serializer_class = HorarioSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
+@extend_schema(tags=["Relacionamentos"], description="Vincula recursos às salas.")
 class PossuiListCreateView(generics.ListCreateAPIView):
     queryset = Possui.objects.select_related(
         "sala",
@@ -96,6 +113,7 @@ class PossuiListCreateView(generics.ListCreateAPIView):
     permission_classes = [PodeConsultarGerenciarCadastros]
 
 
+@extend_schema(tags=["Relacionamentos"], description="Consulta ou remove um vínculo entre sala e recurso.")
 class PossuiDetailView(generics.RetrieveDestroyAPIView):
     queryset = Possui.objects.select_related(
         "sala",
@@ -104,6 +122,7 @@ class PossuiDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = PossuiSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
+@extend_schema(tags=["Relacionamentos"], description="Vincula os recursos exigidos por uma disciplina.")
 class NecessitaDeListCreateView(generics.ListCreateAPIView):
     queryset = NecessitaDe.objects.select_related(
         "disciplina",
@@ -113,6 +132,7 @@ class NecessitaDeListCreateView(generics.ListCreateAPIView):
     permission_classes = [PodeConsultarGerenciarCadastros]
 
 
+@extend_schema(tags=["Relacionamentos"], description="Consulta ou remove um recurso exigido por disciplina.")
 class NecessitaDeDetailView(generics.RetrieveDestroyAPIView):
     queryset = NecessitaDe.objects.select_related(
         "disciplina",
@@ -121,6 +141,44 @@ class NecessitaDeDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = NecessitaDeSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Alocações"],
+        summary="Lista alocações",
+        description="Retorna as alocações de turma, sala, professor e horário.",
+    ),
+    post=extend_schema(
+        tags=["Alocações"],
+        summary="Cria uma alocação",
+        description=(
+            "Cria uma alocação e bloqueia conflitos de sala, professor ou turma."
+        ),
+        responses={
+            201: AlocacaoSerializer,
+            400: OpenApiResponse(description="Dados inválidos ou conflito de ensalamento."),
+        },
+        examples=[
+            OpenApiExample(
+                "Conflito de sala",
+                value={"erro": "conflito_sala", "detalhe": "A sala já está ocupada nesse horário."},
+                response_only=True,
+                status_codes=["400"],
+            ),
+            OpenApiExample(
+                "Conflito de professor",
+                value={"erro": "conflito_professor", "detalhe": "O professor já possui uma aula nesse horário."},
+                response_only=True,
+                status_codes=["400"],
+            ),
+            OpenApiExample(
+                "Conflito de turma",
+                value={"erro": "conflito_turma", "detalhe": "A turma já possui uma aula nesse horário."},
+                response_only=True,
+                status_codes=["400"],
+            ),
+        ],
+    ),
+)
 class AlocacaoListCreateView(generics.ListCreateAPIView):
     queryset = Alocacao.objects.select_related(
         "horario",
@@ -135,6 +193,10 @@ class AlocacaoListCreateView(generics.ListCreateAPIView):
     permission_classes = [PodeConsultarGerenciarCadastros]
 
 
+@extend_schema(
+    tags=["Alocações"],
+    description="Consulta, atualiza ou exclui uma alocação. Atualizações também validam conflitos.",
+)
 class AlocacaoDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Alocacao.objects.select_related(
         "horario",
