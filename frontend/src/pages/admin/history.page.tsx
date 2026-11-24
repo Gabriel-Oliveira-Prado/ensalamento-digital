@@ -1,23 +1,17 @@
 import { usePageHeaderStore } from "@/stores/header.store";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { ArrowRight, ChevronDown } from "lucide-react";
+import { useEffect } from "react";
 import "../../assets/styles/history.css"; //<<< css está aqui!!!
 
 export function HistoryPage() {
     const setPageHeader = usePageHeaderStore((s) => s.setPageHeader);
     const resetPageHeader = usePageHeaderStore((s) => s.resetPageHeader);
-    const { control } = useForm();
 
     useEffect(() => {
         setPageHeader({
             shortTitle: "Histórico",
-<<<<<<< HEAD
-            shortDescription: "Quem trocou, quando, e porquê.",
-=======
             shortDescription: "Consulte o histórico de alterações.",
             spanDescription: "Acompanhe as alterações realizadas nas salas, horários e alocações",
->>>>>>> 462ba35b0461be9e7d1edfa60eccd6c0246ea7fd
         });
 
         return () => {
@@ -25,27 +19,20 @@ export function HistoryPage() {
         };
     }, [setPageHeader, resetPageHeader]);
     return (
-        <div class="historyMain">
-            <div class="filtering">
-                <input
-                    name="search"
-                    control={control}
-                    placeholder="Busque por turma, professor, ou sala."
-                    type="text"
-                    id="busca"
-                />
+        <div className="historyMain">
+            <div className="filtering">
+                <input name="search" placeholder="Busque por turma, professor, ou sala." type="text" id="busca" />
 
-<<<<<<< HEAD
-                <div class="filter">
-                    Período: 30 dias <ChevronDown class="chevron" />
+                <div className="filter">
+                    Período: 30 dias <ChevronDown className="chevron" />
                 </div>
-                <div class="filter">
-                    Alterado por: todos <ChevronDown class="chevron" />
+                <div className="filter">
+                    Alterado por: todos <ChevronDown className="chevron" />
                 </div>
-                <div class="export">Exportar CSV</div>
+                <div className="export">Exportar CSV</div>
             </div>
 
-            <table class="historyTable">
+            <table className="historyTable">
                 <tr>
                     <th>Data e hora</th>
                     <th>Turma</th>
@@ -61,10 +48,10 @@ export function HistoryPage() {
                     </td>
                     <td>Cadeira, Curso</td>
                     <td>
-                        <div class="salas">
-                            <div class="sala1">sala1</div>
+                        <div className="salas">
+                            <div className="sala1">sala1</div>
                             <ArrowRight />
-                            <div class="sala2">sala2</div>
+                            <div className="sala2">sala2</div>
                         </div>
                     </td>
                     <td>Fulano</td>
@@ -78,10 +65,10 @@ export function HistoryPage() {
                     </td>
                     <td>Cadeira, Curso</td>
                     <td>
-                        <div class="salas">
-                            <div class="sala1">sala1</div>
-                            <ArrowRight class="icon" />
-                            <div class="sala2">sala2</div>
+                        <div className="salas">
+                            <div className="sala1">sala1</div>
+                            <ArrowRight className="icon" />
+                            <div className="sala2">sala2</div>
                         </div>
                     </td>
                     <td>Fulano</td>
@@ -95,10 +82,10 @@ export function HistoryPage() {
                     </td>
                     <td>Cadeira, Curso</td>
                     <td>
-                        <div class="salas">
-                            <div class="sala1">sala1</div>
+                        <div className="salas">
+                            <div className="sala1">sala1</div>
                             <ArrowRight />
-                            <div class="sala2">sala2</div>
+                            <div className="sala2">sala2</div>
                         </div>
                     </td>
                     <td>Fulano</td>
@@ -108,15 +95,12 @@ export function HistoryPage() {
                 </tr>
             </table>
 
-            <div class="pageChange">
+            <div className="pageChange">
                 <button>Anterior</button>
                 <button>Próximo</button>
             </div>
 
-            <p class="count"> Mostrando 3 de 12 </p>
+            <p className="count"> Mostrando 3 de 12 </p>
         </div>
     );
-=======
-    return <h1>Histórico de alterações</h1>;
->>>>>>> 462ba35b0461be9e7d1edfa60eccd6c0246ea7fd
 }
