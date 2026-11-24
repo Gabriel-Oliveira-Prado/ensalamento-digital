@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'ensalamento',
     'contas',
+    'drf_spectacular',
 ]
 
 # Custom user model
@@ -103,7 +104,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'pt-br'
 
 TIME_ZONE = 'UTC'
 
@@ -132,6 +133,22 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# drf-spectacular
+SPECTACULAR_SETTINGS = {
+    "TITLE": "API Ensalamento Digital",
+    "DESCRIPTION": (
+        "API responsável pelo cadastro e ensalamento de turmas, "
+        "salas, recursos e horários."
+    ),
+    "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+        "displayOperationId": True,
+    },
 }
 
 
