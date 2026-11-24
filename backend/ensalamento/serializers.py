@@ -4,6 +4,7 @@ from .models import (
     Alocacao,
     Coordenador,
     Disciplina,
+    Historico,
     Horario,
     NecessitaDe,
     Possui,
@@ -227,3 +228,73 @@ class AlocacaoSerializer(serializers.ModelSerializer):
                 })
 
         return attrs
+
+
+class TrocaAlocacaoSerializer(serializers.Serializer):
+    """Valida o pedido de troca de sala e/ou horário de uma alocação."""
+
+    sala = serializers.PrimaryKeyRelatedField(
+        queryset=Sala.objects.all(), required=False
+    )
+    horario = serializers.PrimaryKeyRelatedField(
+        queryset=Horario.objects.all(), required=False
+    )
+    motivo = serializers.CharField(max_length=255)
+
+    def validate_motivo(self, value):
+        motivo = value.strip()
+
+        if not motivo:
+            raise serializers.ValidationError(
+                "O motivo da troca é obrigatório."
+            )
+
+        return motivo
+
+    def validate(self, attrs):
+        alocacao = self.context["alocacao"]
+
+        if "sala" not in attrs and "horario" not in attrs:
+            raise serializers.ValidationError(
+                "Informe a nova sala e/ou o novo horário."
+            )
+
+        nova_sala = attrs.get("sala", alocacao.sala)
+        novo_horario = attrs.get("horario", alocacao.horario)
+
+        if nova_sala == alocacao.sala and novo_horario == alocacao.horario:
+            raise serializers.ValidationError(
+                "A troca não altera a sala nem o horário da alocação."
+            )
+
+        # Reaproveita as regras de conflito de sala, professor e turma.
+        validador = AlocacaoSerializer(
+            instance=alocacao,
+            data={
+                "sala": nova_sala.pk,
+                "horario": novo_horario.pk,
+            },
+            partial=True,
+        )
+        validador.is_valid(raise_exception=True)
+
+        return attrs
+
+
+class HistoricoSerializer(serializers.ModelSerializer):
+    sala = serializers.CharField(source="alocacao.sala.nome", read_only=True)
+    disciplina = serializers.CharField(
+        source="alocacao.disciplina.nome", read_only=True
+    )
+
+    class Meta:
+        model = Historico
+        fields = [
+            "id",
+            "data_alteracao",
+            "motivo",
+            "alocacao",
+            "sala",
+            "disciplina",
+        ]
+        read_only_fields = fields
