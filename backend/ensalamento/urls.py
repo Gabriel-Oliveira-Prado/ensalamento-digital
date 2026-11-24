@@ -3,12 +3,15 @@ from django.urls import path
 from .views import (
     AlocacaoDetailView,
     AlocacaoListCreateView,
+    AlocacaoTrocaView,
     DisciplinaDetailView,
     DisciplinaListCreateView,
+    HistoricoListView,
     HorarioDetailView,
     HorarioListCreateView,
     NecessitaDeDetailView,
     NecessitaDeListCreateView,
+    PainelView,
     PossuiDetailView,
     PossuiListCreateView,
     RecursoDetailView,
@@ -100,5 +103,20 @@ urlpatterns = [
         "alocacoes/<int:pk>/",
         AlocacaoDetailView.as_view(),
         name="alocacao-detail",
-),
+    ),
+    path(
+        "alocacoes/<int:pk>/trocar/",
+        AlocacaoTrocaView.as_view(),
+        name="alocacao-trocar",
+    ),
+    path(
+        "historico/",
+        HistoricoListView.as_view(),
+        name="historico-list",
+    ),
+    path(
+        "painel/",
+        PainelView.as_view(),
+        name="painel",
+    ),
 ]

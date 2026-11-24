@@ -1,14 +1,22 @@
-from rest_framework import generics
+from datetime import date
+
+from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiResponse,
     extend_schema,
     extend_schema_view,
 )
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import (
     Alocacao,
     Disciplina,
+    Historico,
     Horario,
     NecessitaDe,
     Possui,
@@ -31,6 +39,8 @@ from .serializers import (
     SalaSerializer,
     TurmaSerializer,
     AlocacaoSerializer,
+    HistoricoSerializer,
+    TrocaAlocacaoSerializer,
 )
 
 
@@ -209,3 +219,143 @@ class AlocacaoDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     serializer_class = AlocacaoSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
+
+
+@extend_schema(
+    tags=["Alocações"],
+    summary="Troca sala e/ou horário de uma alocação",
+    description="Troca a sala e/ou o horário, valida conflitos e registra o motivo no histórico.",
+    request=TrocaAlocacaoSerializer,
+    responses={
+        200: OpenApiResponse(description="Alocação atualizada e registro de histórico."),
+        400: OpenApiResponse(description="Dados inválidos ou conflito de ensalamento."),
+    },
+)
+class AlocacaoTrocaView(APIView):
+    """Troca a sala e/ou o horário de uma alocação e registra o histórico."""
+
+    permission_classes = [PodeConsultarGerenciarCadastros]
+
+    def post(self, request, pk):
+        with transaction.atomic():
+            alocacao = generics.get_object_or_404(
+                Alocacao.objects.select_for_update().select_related(
+                    "horario", "sala"
+                ),
+                pk=pk,
+            )
+
+            serializer = TrocaAlocacaoSerializer(
+                data=request.data,
+                context={"alocacao": alocacao},
+            )
+            serializer.is_valid(raise_exception=True)
+            dados = serializer.validated_data
+
+            alocacao.sala = dados.get("sala", alocacao.sala)
+            alocacao.horario = dados.get("horario", alocacao.horario)
+            alocacao.save(update_fields=["sala", "horario"])
+
+            historico = Historico.objects.create(
+                alocacao=alocacao,
+                motivo=dados["motivo"],
+                data_alteracao=timezone.now(),
+            )
+
+        return Response(
+            {
+                "alocacao": AlocacaoSerializer(alocacao).data,
+                "historico": HistoricoSerializer(historico).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(
+    tags=["Histórico"],
+    description="Lista as trocas de alocação. Aceita ?alocacao=<id>.",
+)
+class HistoricoListView(generics.ListAPIView):
+    serializer_class = HistoricoSerializer
+    permission_classes = [PodeConsultarGerenciarCadastros]
+
+    def get_queryset(self):
+        queryset = Historico.objects.select_related(
+            "alocacao__sala", "alocacao__disciplina"
+        ).order_by("-data_alteracao", "-id")
+
+        alocacao = self.request.query_params.get("alocacao")
+        if alocacao is not None:
+            if not alocacao.isdigit():
+                return queryset.none()
+            queryset = queryset.filter(alocacao_id=int(alocacao))
+
+        return queryset
+
+
+@extend_schema(
+    tags=["Painel"],
+    description="Aulas do dia para o painel da TV. Público. Aceita ?data=AAAA-MM-DD.",
+    responses={200: OpenApiResponse(description="Aulas do dia.")},
+)
+class PainelView(APIView):
+    """Aulas do dia para o painel da TV. Público e somente leitura.
+
+    Parâmetro opcional: ?data=AAAA-MM-DD (padrão: hoje).
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        agora = timezone.localtime()
+        data_param = request.query_params.get("data")
+
+        if data_param:
+            try:
+                dia = date.fromisoformat(data_param)
+            except ValueError:
+                return Response(
+                    {"detail": "Data inválida. Use o formato AAAA-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            dia = agora.date()
+
+        alocacoes = (
+            Alocacao.objects.filter(horario__dia=dia)
+            .select_related("horario", "sala", "professor", "turma", "disciplina")
+            .order_by("horario__hora_inicio", "sala__nome")
+        )
+
+        aulas = []
+        for a in alocacoes:
+            if dia != agora.date():
+                situacao = "agendada" if dia > agora.date() else "encerrada"
+            elif a.horario.hora_fim <= agora.time():
+                situacao = "encerrada"
+            elif a.horario.hora_inicio <= agora.time():
+                situacao = "em_andamento"
+            else:
+                situacao = "proxima"
+
+            aulas.append(
+                {
+                    "id": a.id,
+                    "hora_inicio": a.horario.hora_inicio.strftime("%H:%M"),
+                    "hora_fim": a.horario.hora_fim.strftime("%H:%M"),
+                    "sala": a.sala.nome,
+                    "disciplina": a.disciplina.nome,
+                    "professor": a.professor.nome,
+                    "turma": f"{a.turma.ano}/{a.turma.periodo}",
+                    "situacao": situacao,
+                }
+            )
+
+        return Response(
+            {
+                "data": dia.isoformat(),
+                "atualizado_em": agora.isoformat(),
+                "aulas": aulas,
+            }
+        )
