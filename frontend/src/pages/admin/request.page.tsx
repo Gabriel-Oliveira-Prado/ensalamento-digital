@@ -7,9 +7,8 @@ export function RequestPage() {
 
     useEffect(() => {
         setPageHeader({
-            shortTitle: "Solicitações",
-            shortDescription: "Faça demandas para",
-            spanDescription: "salas específicas",
+            shortTitle: "Solicitações de troca de sala",
+            shortDescription: "Só a coordenação altera o ensalamento. Professores solicitam, você decide.",
         });
 
         return () => {
@@ -17,5 +16,5 @@ export function RequestPage() {
         };
     }, [setPageHeader, resetPageHeader]);
 
-    return <h1>Página de solicitações</h1>;
+    return <h1>Essa é a tela de solicitação.</h1>;
 }
