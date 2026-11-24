@@ -1,1344 +1,226 @@
+
 from django.test import TestCase
-from rest_framework import status
 from rest_framework.test import APIClient
+from rest_framework import status
 
-from contas.models import Usuario
-from .models import (
-    Alocacao,
-    Coordenador,
-    Disciplina,
-    Historico,
-    Horario,
-    NecessitaDe,
-    Possui,
-    Professor,
-    Recurso,
-    Sala,
-    Turma,
-)
+from .models import Usuario
 
 
-class RecursoCrudTests(TestCase):
+class AutenticacaoTestes(TestCase):
     def setUp(self):
         self.client = APIClient()
 
-        self.admin = Usuario.objects.create_user(
-            email="admin@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
+        self.admin = self.criar_usuario(
+            "admin@teste.com",
+            Usuario.TipoUsuario.ADMINISTRADOR
+        )
+        self.coordenador = self.criar_usuario(
+            "coordenador@teste.com",
+            Usuario.TipoUsuario.COORDENADOR
+        )
+        self.professor = self.criar_usuario(
+            "professor@teste.com",
+            Usuario.TipoUsuario.PROFESSOR
         )
 
-        self.professor = Usuario.objects.create_user(
-            email="professor@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.PROFESSOR,
+    def criar_usuario(self, email, tipo):
+        usuario = Usuario(email=email, tipo=tipo)
+        usuario.set_password("SenhaForte@123456")
+        usuario.save()
+        return usuario
+
+    def obter_token(self, email):
+        resposta = self.client.post(
+            "/api/auth/token/",
+            {
+                "email": email,
+                "password": "SenhaForte@123456"
+            },
+            format="json"
+        )
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        return resposta.data["access"]
+
+    def autenticar(self, usuario):
+        token = self.obter_token(usuario.email)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {token}"
         )
 
-        self.recurso = Recurso.objects.create(nome="Projetor")
+    def dados_usuario(self, email, tipo):
+        return {
+            "email": email,
+            "password": "OutraSenhaForte@123456",
+            "first_name": "Usuario",
+            "last_name": "Teste",
+            "tipo": tipo
+        }
 
-    def test_professor_pode_listar_recursos(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.get("/api/ensalamento/recursos/")
+    def test_login_com_email_e_senha(self):
+        resposta = self.client.post(
+            "/api/auth/token/",
+            {
+                "email": self.admin.email,
+                "password": "SenhaForte@123456"
+            },
+            format="json"
+        )
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(resposta.data), 1)
+        self.assertIn("access", resposta.data)
+        self.assertIn("refresh", resposta.data)
 
-    def test_administrador_pode_criar_recurso(self):
-        self.client.force_authenticate(user=self.admin)
+    def test_login_com_senha_incorreta(self):
+        resposta = self.client.post(
+            "/api/auth/token/",
+            {
+                "email": self.admin.email,
+                "password": "senha-errada"
+            },
+            format="json"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_renovacao_do_token(self):
+        resposta_login = self.client.post(
+            "/api/auth/token/",
+            {
+                "email": self.admin.email,
+                "password": "SenhaForte@123456"
+            },
+            format="json"
+        )
 
         resposta = self.client.post(
-            "/api/ensalamento/recursos/",
-            {"nome": "Laboratório"},
-            format="json",
+            "/api/auth/token/refresh/",
+            {"refresh": resposta_login.data["refresh"]},
+            format="json"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertIn("access", resposta.data)
+
+    def test_administrador_pode_cadastrar_coordenador(self):
+        self.autenticar(self.admin)
+
+        resposta = self.client.post(
+            "/api/usuarios/",
+            self.dados_usuario(
+                "novo.coordenador@teste.com",
+                Usuario.TipoUsuario.COORDENADOR
+            ),
+            format="json"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(
-            Recurso.objects.filter(nome="Laboratório").exists()
-        )
 
-    def test_professor_nao_pode_criar_recurso(self):
-        self.client.force_authenticate(user=self.professor)
+    def test_coordenador_pode_cadastrar_professor(self):
+        self.autenticar(self.coordenador)
 
         resposta = self.client.post(
-            "/api/ensalamento/recursos/",
-            {"nome": "Quadro digital"},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_nao_pode_criar_recurso_duplicado(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/recursos/",
-            {"nome": "Projetor"},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-
-    def test_administrador_pode_atualizar_recurso(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.patch(
-            f"/api/ensalamento/recursos/{self.recurso.id}/",
-            {"nome": "Projetor multimídia"},
-            format="json",
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-
-    def test_administrador_pode_excluir_recurso(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.delete(
-            f"/api/ensalamento/recursos/{self.recurso.id}/",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_204_NO_CONTENT,
-        )
-
-
-class SalaCrudTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-        self.admin = Usuario.objects.create_user(
-            email="admin-sala@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
-        )
-
-        self.professor = Usuario.objects.create_user(
-            email="professor-sala@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.PROFESSOR,
-        )
-
-        self.sala = Sala.objects.create(
-            nome="B204",
-            capacidade=40,
-            tipo="Sala de aula",
-        )
-
-    def test_professor_pode_listar_salas(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.get(
-            "/api/ensalamento/salas/"
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(resposta.data), 1)
-
-    def test_administrador_pode_criar_sala(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/salas/",
-            {
-                "nome": "Laboratório 1",
-                "capacidade": 30,
-                "tipo": "Laboratório",
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_201_CREATED,
-        )
-
-        self.assertTrue(
-            Sala.objects.filter(nome="Laboratório 1").exists()
-        )
-
-    def test_professor_nao_pode_criar_sala(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.post(
-            "/api/ensalamento/salas/",
-            {
-                "nome": "Sala proibida",
-                "capacidade": 20,
-                "tipo": "Sala de aula",
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_administrador_pode_atualizar_sala(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.patch(
-            f"/api/ensalamento/salas/{self.sala.id}/",
-            {"capacidade": 50},
-            format="json",
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-
-        self.sala.refresh_from_db()
-        self.assertEqual(self.sala.capacidade, 50)
-
-    def test_administrador_pode_excluir_sala(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.delete(
-            f"/api/ensalamento/salas/{self.sala.id}/",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_204_NO_CONTENT,
-        )
-
-        self.assertFalse(
-            Sala.objects.filter(id=self.sala.id).exists()
-        )
-
-    def test_nao_pode_criar_sala_com_capacidade_negativa(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/salas/",
-            {
-                "nome": "Sala inválida",
-                "capacidade": -1,
-                "tipo": "Sala de aula",
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-class DisciplinaCrudTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-        self.admin = Usuario.objects.create_user(
-            email="admin-disciplina@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
-        )
-
-        self.professor = Usuario.objects.create_user(
-            email="professor-disciplina@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.PROFESSOR,
-        )
-
-        self.disciplina = Disciplina.objects.create(
-            nome="Banco de Dados"
-        )
-
-    def test_professor_pode_listar_disciplinas(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.get(
-            "/api/ensalamento/disciplinas/"
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-        self.assertEqual(len(resposta.data), 1)
-
-    def test_administrador_pode_criar_disciplina(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/disciplinas/",
-            {"nome": "Engenharia de Software"},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_201_CREATED,
-        )
-        self.assertTrue(
-            Disciplina.objects.filter(
-                nome="Engenharia de Software"
-            ).exists()
-        )
-
-    def test_professor_nao_pode_criar_disciplina(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.post(
-            "/api/ensalamento/disciplinas/",
-            {"nome": "Nova Disciplina"},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_administrador_pode_atualizar_disciplina(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.patch(
-            f"/api/ensalamento/disciplinas/{self.disciplina.id}/",
-            {"nome": "Banco de Dados Avancado"},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-
-        self.disciplina.refresh_from_db()
-        self.assertEqual(
-            self.disciplina.nome,
-            "Banco de Dados Avancado",
-        )
-
-    def test_administrador_pode_excluir_disciplina(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.delete(
-            f"/api/ensalamento/disciplinas/{self.disciplina.id}/",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_204_NO_CONTENT,
-        )
-        self.assertFalse(
-            Disciplina.objects.filter(
-                id=self.disciplina.id
-            ).exists()
-        )
-
-    def test_nao_pode_criar_disciplina_sem_nome(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/disciplinas/",
-            {"nome": "   "},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-
-
-class TurmaCrudTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-        self.admin = Usuario.objects.create_user(
-            email="admin-turma@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
-        )
-
-        self.professor = Usuario.objects.create_user(
-            email="professor-turma@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.PROFESSOR,
-        )
-
-        self.turma = Turma.objects.create(
-            qtd_aluno=35,
-            ano=2026,
-            periodo=2,
-        )
-
-    def test_professor_pode_listar_turmas(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.get(
-            "/api/ensalamento/turmas/"
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-        self.assertEqual(len(resposta.data), 1)
-
-    def test_administrador_pode_criar_turma(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/turmas/",
-            {
-                "qtd_aluno": 40,
-                "ano": 2026,
-                "periodo": 1,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_201_CREATED,
-        )
-        self.assertTrue(
-            Turma.objects.filter(
-                qtd_aluno=40,
-                ano=2026,
-                periodo=1,
-            ).exists()
-        )
-
-    def test_professor_nao_pode_criar_turma(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.post(
-            "/api/ensalamento/turmas/",
-            {
-                "qtd_aluno": 30,
-                "ano": 2026,
-                "periodo": 1,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_administrador_pode_atualizar_turma(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.patch(
-            f"/api/ensalamento/turmas/{self.turma.id}/",
-            {"qtd_aluno": 45},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-
-        self.turma.refresh_from_db()
-        self.assertEqual(
-            self.turma.qtd_aluno,
-            45,
-        )
-
-    def test_administrador_pode_excluir_turma(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.delete(
-            f"/api/ensalamento/turmas/{self.turma.id}/",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_204_NO_CONTENT,
-        )
-        self.assertFalse(
-            Turma.objects.filter(
-                id=self.turma.id
-            ).exists()
-        )
-
-    def test_nao_pode_criar_turma_com_quantidade_negativa(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/turmas/",
-            {
-                "qtd_aluno": -1,
-                "ano": 2026,
-                "periodo": 1,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-
-
-class HorarioCrudTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-        self.admin = Usuario.objects.create_user(
-            email="admin-horario@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
-        )
-
-        self.professor = Usuario.objects.create_user(
-            email="professor-horario@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.PROFESSOR,
-        )
-
-        self.horario = Horario.objects.create(
-            dia="2026-11-10",
-            hora_inicio="08:00:00",
-            hora_fim="10:00:00",
-        )
-
-    def test_professor_pode_listar_horarios(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.get(
-            "/api/ensalamento/horarios/"
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-        self.assertEqual(len(resposta.data), 1)
-
-    def test_administrador_pode_criar_horario(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/horarios/",
-            {
-                "dia": "2026-11-11",
-                "hora_inicio": "10:00:00",
-                "hora_fim": "12:00:00",
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_201_CREATED,
-        )
-        self.assertTrue(
-            Horario.objects.filter(
-                dia="2026-11-11",
-                hora_inicio="10:00:00",
-                hora_fim="12:00:00",
-            ).exists()
-        )
-
-    def test_professor_nao_pode_criar_horario(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.post(
-            "/api/ensalamento/horarios/",
-            {
-                "dia": "2026-11-12",
-                "hora_inicio": "14:00:00",
-                "hora_fim": "16:00:00",
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_administrador_pode_atualizar_horario(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.patch(
-            f"/api/ensalamento/horarios/{self.horario.id}/",
-            {"hora_fim": "11:00:00"},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-
-        self.horario.refresh_from_db()
-        self.assertEqual(
-            str(self.horario.hora_fim),
-            "11:00:00",
-        )
-
-    def test_administrador_pode_excluir_horario(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.delete(
-            f"/api/ensalamento/horarios/{self.horario.id}/",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_204_NO_CONTENT,
-        )
-        self.assertFalse(
-            Horario.objects.filter(
-                id=self.horario.id
-            ).exists()
-        )
-
-    def test_nao_pode_criar_horario_invalido(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/horarios/",
-            {
-                "dia": "2026-11-13",
-                "hora_inicio": "14:00:00",
-                "hora_fim": "12:00:00",
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-class RelacionamentoRecursosTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-        self.admin = Usuario.objects.create_user(
-            email="admin-relacionamentos@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
-        )
-
-        self.professor = Usuario.objects.create_user(
-            email="professor-relacionamentos@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.PROFESSOR,
-        )
-
-        self.sala = Sala.objects.create(
-            nome="B204",
-            capacidade=40,
-            tipo="Sala de aula",
-        )
-
-        self.recurso = Recurso.objects.create(
-            nome="Projetor"
-        )
-
-        self.disciplina = Disciplina.objects.create(
-            nome="Banco de Dados"
-        )
-
-    def test_administrador_pode_associar_recurso_a_sala(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/possui/",
-            {
-                "sala": self.sala.id,
-                "recurso": self.recurso.id,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_201_CREATED,
-        )
-
-        self.assertTrue(
-            Possui.objects.filter(
-                sala=self.sala,
-                recurso=self.recurso,
-            ).exists()
-        )
-
-    def test_professor_nao_pode_associar_recurso_a_sala(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.post(
-            "/api/ensalamento/possui/",
-            {
-                "sala": self.sala.id,
-                "recurso": self.recurso.id,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_nao_pode_duplicar_recurso_na_mesma_sala(self):
-        self.client.force_authenticate(user=self.admin)
-
-        Possui.objects.create(
-            sala=self.sala,
-            recurso=self.recurso,
-        )
-
-        resposta = self.client.post(
-            "/api/ensalamento/possui/",
-            {
-                "sala": self.sala.id,
-                "recurso": self.recurso.id,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-
-    def test_administrador_pode_listar_recursos_da_sala(self):
-        self.client.force_authenticate(user=self.admin)
-
-        Possui.objects.create(
-            sala=self.sala,
-            recurso=self.recurso,
-        )
-
-        resposta = self.client.get(
-            "/api/ensalamento/possui/"
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-        self.assertEqual(len(resposta.data), 1)
-
-    def test_administrador_pode_remover_recurso_da_sala(self):
-        self.client.force_authenticate(user=self.admin)
-
-        relacionamento = Possui.objects.create(
-            sala=self.sala,
-            recurso=self.recurso,
-        )
-
-        resposta = self.client.delete(
-            f"/api/ensalamento/possui/{relacionamento.id}/"
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_204_NO_CONTENT,
-        )
-
-        self.assertFalse(
-            Possui.objects.filter(
-                id=relacionamento.id
-            ).exists()
-        )
-
-    def test_administrador_pode_associar_recurso_a_disciplina(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            "/api/ensalamento/necessita-de/",
-            {
-                "disciplina": self.disciplina.id,
-                "recurso": self.recurso.id,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_201_CREATED,
-        )
-
-        self.assertTrue(
-            NecessitaDe.objects.filter(
-                disciplina=self.disciplina,
-                recurso=self.recurso,
-            ).exists()
-        )
-
-    def test_professor_nao_pode_associar_recurso_a_disciplina(self):
-        self.client.force_authenticate(user=self.professor)
-
-        resposta = self.client.post(
-            "/api/ensalamento/necessita-de/",
-            {
-                "disciplina": self.disciplina.id,
-                "recurso": self.recurso.id,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_nao_pode_duplicar_recurso_exigido_por_disciplina(self):
-        self.client.force_authenticate(user=self.admin)
-
-        NecessitaDe.objects.create(
-            disciplina=self.disciplina,
-            recurso=self.recurso,
-        )
-
-        resposta = self.client.post(
-            "/api/ensalamento/necessita-de/",
-            {
-                "disciplina": self.disciplina.id,
-                "recurso": self.recurso.id,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-
-    def test_administrador_pode_remover_recurso_da_disciplina(self):
-        self.client.force_authenticate(user=self.admin)
-
-        relacionamento = NecessitaDe.objects.create(
-            disciplina=self.disciplina,
-            recurso=self.recurso,
-        )
-
-        resposta = self.client.delete(
-            f"/api/ensalamento/necessita-de/{relacionamento.id}/"
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_204_NO_CONTENT,
-        )
-
-        self.assertFalse(
-            NecessitaDe.objects.filter(
-                id=relacionamento.id
-            ).exists()
-        )
-class AlocacaoCrudTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-        self.admin = Usuario.objects.create_user(
-            email="admin-alocacao@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
-        )
-
-        self.coordenador_usuario = Usuario.objects.create_user(
-            email="coordenador-alocacao@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.COORDENADOR,
-        )
-
-        self.professor_usuario = Usuario.objects.create_user(
-            email="professor-alocacao@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.PROFESSOR,
-        )
-
-        self.professor = Professor.objects.create(
-            email="professor-dominio@teste.com",
-            nome="Professor Teste",
-            matricula=123456,
-            senha="senha-legada",
-        )
-
-        self.coordenador = Coordenador.objects.create(
-            nome="Coordenador Teste",
-            email="coordenador-dominio@teste.com",
-            senha="senha-legada",
-        )
-
-        self.sala = Sala.objects.create(
-            nome="B204",
-            capacidade=40,
-            tipo="Sala de aula",
-        )
-
-        self.turma = Turma.objects.create(
-            qtd_aluno=30,
-            ano=2026,
-            periodo=2,
-        )
-
-        self.disciplina = Disciplina.objects.create(
-            nome="Banco de Dados",
-        )
-
-        self.horario = Horario.objects.create(
-            dia="2026-11-20",
-            hora_inicio="08:00:00",
-            hora_fim="10:00:00",
-        )
-
-        self.alocacao = Alocacao.objects.create(
-            horario=self.horario,
-            professor=self.professor,
-            sala=self.sala,
-            turma=self.turma,
-            disciplina=self.disciplina,
-            coordenador=self.coordenador,
-        )
-
-    def dados_alocacao(self):
-        return {
-            "horario": self.horario.id,
-            "professor": self.professor.id,
-            "sala": self.sala.id,
-            "turma": self.turma.id,
-            "disciplina": self.disciplina.id,
-            "coordenador": self.coordenador.id,
-        }
-
-    def test_coordenador_pode_listar_alocacoes(self):
-        self.client.force_authenticate(
-            user=self.coordenador_usuario
-        )
-
-        resposta = self.client.get(
-            "/api/ensalamento/alocacoes/"
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-        self.assertEqual(len(resposta.data), 1)
-
-    def test_administrador_pode_criar_alocacao(self):
-        novo_horario = Horario.objects.create(
-            dia="2026-11-21",
-            hora_inicio="08:00:00",
-            hora_fim="10:00:00",
-        )
-
-        nova_turma = Turma.objects.create(
-            qtd_aluno=25,
-            ano=2026,
-            periodo=2,
-        )
-
-        self.client.force_authenticate(user=self.admin)
-
-        dados = {
-            "horario": novo_horario.id,
-            "professor": self.professor.id,
-            "sala": self.sala.id,
-            "turma": nova_turma.id,
-            "disciplina": self.disciplina.id,
-            "coordenador": self.coordenador.id,
-        }
-
-        resposta = self.client.post(
-            "/api/ensalamento/alocacoes/",
-            dados,
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_201_CREATED,
-        )
-
-    def test_professor_nao_pode_criar_alocacao(self):
-        self.client.force_authenticate(
-            user=self.professor_usuario
-        )
-
-        resposta = self.client.post(
-            "/api/ensalamento/alocacoes/",
-            self.dados_alocacao(),
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_nao_pode_alocar_sala_em_horario_conflitante(self):
-        nova_turma = Turma.objects.create(
-            qtd_aluno=20,
-            ano=2026,
-            periodo=2,
-        )
-
-        self.client.force_authenticate(user=self.admin)
-
-        dados = self.dados_alocacao()
-        dados["turma"] = nova_turma.id
-
-        resposta = self.client.post(
-            "/api/ensalamento/alocacoes/",
-            dados,
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-        self.assertEqual(
-            resposta.data["erro"][0],
-            "conflito_sala",
-        )
-
-    def test_nao_pode_alocar_professor_em_horario_conflitante(self):
-        nova_sala = Sala.objects.create(
-            nome="B205",
-            capacidade=40,
-            tipo="Sala de aula",
-        )
-
-        nova_turma = Turma.objects.create(
-            qtd_aluno=20,
-            ano=2026,
-            periodo=2,
-        )
-
-        self.client.force_authenticate(user=self.admin)
-
-        dados = self.dados_alocacao()
-        dados["sala"] = nova_sala.id
-        dados["turma"] = nova_turma.id
-
-        resposta = self.client.post(
-            "/api/ensalamento/alocacoes/",
-            dados,
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-        self.assertEqual(
-            resposta.data["erro"][0],
-            "conflito_professor",
-        )
-
-    def test_nao_pode_alocar_turma_em_horario_conflitante(self):
-        nova_sala = Sala.objects.create(
-            nome="B206",
-            capacidade=40,
-            tipo="Sala de aula",
-        )
-
-        novo_professor = Professor.objects.create(
-            email="outro-professor@teste.com",
-            nome="Outro Professor",
-            matricula=654321,
-            senha="senha-legada",
-        )
-
-        self.client.force_authenticate(user=self.admin)
-
-        dados = self.dados_alocacao()
-        dados["sala"] = nova_sala.id
-        dados["professor"] = novo_professor.id
-
-        resposta = self.client.post(
-            "/api/ensalamento/alocacoes/",
-            dados,
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-        self.assertEqual(
-            resposta.data["erro"][0],
-            "conflito_turma",
-        )
-
-    def test_administrador_pode_atualizar_alocacao(self):
-        nova_sala = Sala.objects.create(
-            nome="B207",
-            capacidade=40,
-            tipo="Sala de aula",
-        )
-
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.patch(
-            f"/api/ensalamento/alocacoes/{self.alocacao.id}/",
-            {"sala": nova_sala.id},
-            format="json",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
-
-        self.alocacao.refresh_from_db()
-        self.assertEqual(
-            self.alocacao.sala.id,
-            nova_sala.id,
-        )
-
-    def test_administrador_pode_excluir_alocacao(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.delete(
-            f"/api/ensalamento/alocacoes/{self.alocacao.id}/",
-        )
-
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_204_NO_CONTENT,
-        )
-
-        self.assertFalse(
-            Alocacao.objects.filter(
-                id=self.alocacao.id
-            ).exists()
-        )
-
-
-class TrocaHistoricoPainelTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-        self.admin = Usuario.objects.create_user(
-            email="admin-troca@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
-        )
-        self.professor_usuario = Usuario.objects.create_user(
-            email="prof-troca@teste.com",
-            password="SenhaForte@123456",
-            tipo=Usuario.TipoUsuario.PROFESSOR,
-        )
-
-        self.professor = Professor.objects.create(
-            email="p-troca@teste.com",
-            nome="Professor Troca",
-            matricula=777001,
-            senha="x",
-        )
-        self.coordenador = Coordenador.objects.create(
-            nome="Coord Troca", email="c-troca@teste.com", senha="x"
-        )
-        self.sala_a = Sala.objects.create(
-            nome="A101", capacidade=40, tipo="Sala de aula"
-        )
-        self.sala_b = Sala.objects.create(
-            nome="A102", capacidade=40, tipo="Sala de aula"
-        )
-        self.turma = Turma.objects.create(qtd_aluno=30, ano=2026, periodo=2)
-        self.turma_2 = Turma.objects.create(qtd_aluno=30, ano=2026, periodo=1)
-        self.disciplina = Disciplina.objects.create(nome="Redes")
-        self.horario = Horario.objects.create(
-            dia="2026-11-20", hora_inicio="08:00:00", hora_fim="10:00:00"
-        )
-        self.horario_livre = Horario.objects.create(
-            dia="2026-11-20", hora_inicio="10:00:00", hora_fim="12:00:00"
-        )
-
-        self.alocacao = Alocacao.objects.create(
-            horario=self.horario,
-            professor=self.professor,
-            sala=self.sala_a,
-            turma=self.turma,
-            disciplina=self.disciplina,
-            coordenador=self.coordenador,
-        )
-        self.url = f"/api/ensalamento/alocacoes/{self.alocacao.id}/trocar/"
-
-    def test_troca_de_sala_atualiza_alocacao_e_gera_historico(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            self.url,
-            {"sala": self.sala_b.id, "motivo": "Ar-condicionado quebrado"},
-            format="json",
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-        self.alocacao.refresh_from_db()
-        self.assertEqual(self.alocacao.sala, self.sala_b)
-        self.assertEqual(self.alocacao.horario, self.horario)
-        self.assertEqual(self.alocacao.historico.count(), 1)
-        self.assertEqual(
-            self.alocacao.historico.first().motivo,
-            "Ar-condicionado quebrado",
-        )
-
-    def test_troca_de_horario(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            self.url,
-            {"horario": self.horario_livre.id, "motivo": "Reposição"},
-            format="json",
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-        self.alocacao.refresh_from_db()
-        self.assertEqual(self.alocacao.horario, self.horario_livre)
-
-    def test_troca_exige_motivo(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            self.url,
-            {"sala": self.sala_b.id, "motivo": "   "},
-            format="json",
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(Historico.objects.count(), 0)
-
-    def test_troca_exige_sala_ou_horario(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            self.url, {"motivo": "Sem alteração"}, format="json"
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_troca_sem_mudanca_real_e_rejeitada(self):
-        self.client.force_authenticate(user=self.admin)
-
-        resposta = self.client.post(
-            self.url,
-            {"sala": self.sala_a.id, "motivo": "Igual"},
-            format="json",
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(Historico.objects.count(), 0)
-
-    def test_troca_com_conflito_de_sala_nao_altera_nem_gera_historico(self):
-        Alocacao.objects.create(
-            horario=self.horario_livre,
-            professor=Professor.objects.create(
-                email="outro@teste.com",
-                nome="Outro",
-                matricula=777002,
-                senha="x",
+            "/api/usuarios/",
+            self.dados_usuario(
+                "novo.professor@teste.com",
+                Usuario.TipoUsuario.PROFESSOR
             ),
-            sala=self.sala_b,
-            turma=self.turma_2,
-            disciplina=self.disciplina,
-            coordenador=self.coordenador,
+            format="json"
         )
-        self.client.force_authenticate(user=self.admin)
+
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED)
+
+    def test_coordenador_nao_pode_cadastrar_coordenador(self):
+        self.autenticar(self.coordenador)
 
         resposta = self.client.post(
-            self.url,
-            {
-                "sala": self.sala_b.id,
-                "horario": self.horario_livre.id,
-                "motivo": "Teste conflito",
-            },
-            format="json",
+            "/api/usuarios/",
+            self.dados_usuario(
+                "outro.coordenador@teste.com",
+                Usuario.TipoUsuario.COORDENADOR
+            ),
+            format="json"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
-        self.alocacao.refresh_from_db()
-        self.assertEqual(self.alocacao.sala, self.sala_a)
-        self.assertEqual(Historico.objects.count(), 0)
 
-    def test_professor_nao_pode_trocar(self):
-        self.client.force_authenticate(user=self.professor_usuario)
+    def test_professor_nao_pode_cadastrar_usuario(self):
+        self.autenticar(self.professor)
 
         resposta = self.client.post(
-            self.url,
-            {"sala": self.sala_b.id, "motivo": "Tentativa"},
-            format="json",
+            "/api/usuarios/",
+            self.dados_usuario(
+                "outro.usuario@teste.com",
+                Usuario.TipoUsuario.PROFESSOR
+            ),
+            format="json"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_troca_de_alocacao_inexistente_retorna_404(self):
-        self.client.force_authenticate(user=self.admin)
-
+    def test_usuario_sem_token_nao_pode_cadastrar(self):
         resposta = self.client.post(
-            "/api/ensalamento/alocacoes/99999/trocar/",
-            {"sala": self.sala_b.id, "motivo": "x"},
-            format="json",
+            "/api/usuarios/",
+            self.dados_usuario(
+                "sem.token@teste.com",
+                Usuario.TipoUsuario.PROFESSOR
+            ),
+            format="json"
         )
 
-        self.assertEqual(resposta.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(resposta.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
 
-    def test_historico_lista_e_filtra_por_alocacao(self):
-        self.client.force_authenticate(user=self.admin)
-        self.client.post(
-            self.url,
-            {"sala": self.sala_b.id, "motivo": "Primeira"},
-            format="json",
+    def test_listar_usuarios(self):
+        self.autenticar(self.admin)
+        resposta = self.client.get("/api/usuarios/lista/")
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(resposta.data), 3)
+
+    def test_detalhar_usuario(self):
+        self.autenticar(self.admin)
+        resposta = self.client.get(f"/api/usuarios/{self.professor.id}/")
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.data["email"], self.professor.email)
+        self.assertNotIn("password", resposta.data)
+
+    def test_atualizar_usuario_sem_senha(self):
+        self.autenticar(self.admin)
+        resposta = self.client.patch(
+            f"/api/usuarios/{self.professor.id}/atualizar/",
+            {"first_name": "NomeAtualizado"},
+            format="json"
         )
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.professor.refresh_from_db()
+        self.assertEqual(self.professor.first_name, "NomeAtualizado")
 
-        resposta = self.client.get(
-            f"/api/ensalamento/historico/?alocacao={self.alocacao.id}"
+    def test_atualizar_usuario_com_nova_senha(self):
+        self.autenticar(self.admin)
+        resposta = self.client.patch(
+            f"/api/usuarios/{self.professor.id}/atualizar/",
+            {"password": "NovaSenhaForte@98765"},
+            format="json"
         )
-        vazia = self.client.get("/api/ensalamento/historico/?alocacao=999")
-
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(resposta.data), 1)
-        self.assertEqual(resposta.data[0]["motivo"], "Primeira")
-        self.assertEqual(resposta.data[0]["sala"], "A102")
-        self.assertEqual(len(vazia.data), 0)
+        # Verifica se o login funciona com a nova senha
+        resposta_login = self.client.post(
+            "/api/auth/token/",
+            {
+                "email": self.professor.email,
+                "password": "NovaSenhaForte@98765"
+            },
+            format="json"
+        )
+        self.assertEqual(resposta_login.status_code, status.HTTP_200_OK)
 
-    def test_historico_exige_autenticacao(self):
-        resposta = self.client.get("/api/ensalamento/historico/")
+    def test_excluir_usuario(self):
+        self.autenticar(self.admin)
+        usuario_temp = self.criar_usuario("temp@teste.com", Usuario.TipoUsuario.PROFESSOR)
+        resposta = self.client.delete(f"/api/usuarios/{usuario_temp.id}/excluir/")
+        self.assertEqual(resposta.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Usuario.objects.filter(id=usuario_temp.id).exists())
 
-        self.assertEqual(resposta.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_painel_e_publico_e_lista_aulas_do_dia(self):
-        resposta = self.client.get("/api/ensalamento/painel/?data=2026-11-20")
-
-        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-        self.assertEqual(resposta.data["data"], "2026-11-20")
-        self.assertEqual(len(resposta.data["aulas"]), 1)
-        aula = resposta.data["aulas"][0]
-        self.assertEqual(aula["sala"], "A101")
-        self.assertEqual(aula["hora_inicio"], "08:00")
-        self.assertEqual(aula["professor"], "Professor Troca")
-        self.assertNotIn("email", aula)
-
-    def test_painel_dia_sem_aulas(self):
-        resposta = self.client.get("/api/ensalamento/painel/?data=2030-01-01")
-
-        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
-        self.assertEqual(resposta.data["aulas"], [])
-
-    def test_painel_data_invalida(self):
-        resposta = self.client.get("/api/ensalamento/painel/?data=abc")
-
+    def test_impedir_auto_exclusao(self):
+        self.autenticar(self.admin)
+        resposta = self.client.delete(f"/api/usuarios/{self.admin.id}/excluir/")
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_painel_reflete_troca_de_sala(self):
-        self.client.force_authenticate(user=self.admin)
-        self.client.post(
-            self.url,
-            {"sala": self.sala_b.id, "motivo": "Troca"},
-            format="json",
-        )
-        self.client.force_authenticate(user=None)
-
-        resposta = self.client.get("/api/ensalamento/painel/?data=2026-11-20")
-
-        self.assertEqual(resposta.data["aulas"][0]["sala"], "A102")
+        self.assertTrue(Usuario.objects.filter(id=self.admin.id).exists())
