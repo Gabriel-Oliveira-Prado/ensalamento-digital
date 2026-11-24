@@ -1,0 +1,89 @@
+td div {
+    text-transform: capitalize;
+    font-size: 12px;
+}
+
+td {
+
+    max-width: 200px;
+
+}
+
+th {
+    text-transform: capitalize;
+    font-size: 11px;
+}
+
+tr:first-of-type {
+
+    height: 50px;
+    background-color: #F6F8FB;
+    color: #5B6B88;
+
+    th {
+        text-align: start;
+    }
+
+}
+
+tr:not(tr:first-of-type) {
+    border-bottom: 1px solid #E6EBF2;
+    height: 50px;
+
+}
+
+tr:last-of-type {
+    border-bottom: none !important;
+}
+
+tr td:first-of-type div {
+
+    border-left: 6px solid red;
+    padding-left: 10px;
+    font-weight: 700;
+    color: #0F1F3D !important;
+
+}
+
+tr td div {
+
+    color: #3A4A66;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px;
+    margin-inline: 0px;
+
+    div {
+
+        margin: 0px;
+        background-color: yellow;
+        max-width: fit-content;
+        height: fit-content;
+        padding: 5px;
+        min-width: 60px;
+        padding-inline: 20px;
+        display: flex;
+        justify-content: center;
+        border-radius: 30px;
+        font-weight: 700;
+
+    }
+
+}
+
+tr td:first-child,
+tr th:first-child {
+    padding-left: 2.5%;
+}
+
+tr td:last-child,
+tr th:last-child {
+    padding-right: 2.5%;
+}
+
+table {
+    width: auto;
+}
