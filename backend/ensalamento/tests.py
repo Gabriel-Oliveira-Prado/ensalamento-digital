@@ -7,6 +7,7 @@ from .models import (
     Alocacao,
     Coordenador,
     Disciplina,
+    Historico,
     Horario,
     NecessitaDe,
     Possui,
@@ -1112,3 +1113,232 @@ class AlocacaoCrudTests(TestCase):
                 id=self.alocacao.id
             ).exists()
         )
+
+
+class TrocaHistoricoPainelTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.admin = Usuario.objects.create_user(
+            email="admin-troca@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
+        )
+        self.professor_usuario = Usuario.objects.create_user(
+            email="prof-troca@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
+
+        self.professor = Professor.objects.create(
+            email="p-troca@teste.com",
+            nome="Professor Troca",
+            matricula=777001,
+            senha="x",
+        )
+        self.coordenador = Coordenador.objects.create(
+            nome="Coord Troca", email="c-troca@teste.com", senha="x"
+        )
+        self.sala_a = Sala.objects.create(
+            nome="A101", capacidade=40, tipo="Sala de aula"
+        )
+        self.sala_b = Sala.objects.create(
+            nome="A102", capacidade=40, tipo="Sala de aula"
+        )
+        self.turma = Turma.objects.create(qtd_aluno=30, ano=2026, periodo=2)
+        self.turma_2 = Turma.objects.create(qtd_aluno=30, ano=2026, periodo=1)
+        self.disciplina = Disciplina.objects.create(nome="Redes")
+        self.horario = Horario.objects.create(
+            dia="2026-11-20", hora_inicio="08:00:00", hora_fim="10:00:00"
+        )
+        self.horario_livre = Horario.objects.create(
+            dia="2026-11-20", hora_inicio="10:00:00", hora_fim="12:00:00"
+        )
+
+        self.alocacao = Alocacao.objects.create(
+            horario=self.horario,
+            professor=self.professor,
+            sala=self.sala_a,
+            turma=self.turma,
+            disciplina=self.disciplina,
+            coordenador=self.coordenador,
+        )
+        self.url = f"/api/ensalamento/alocacoes/{self.alocacao.id}/trocar/"
+
+    def test_troca_de_sala_atualiza_alocacao_e_gera_historico(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            self.url,
+            {"sala": self.sala_b.id, "motivo": "Ar-condicionado quebrado"},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.alocacao.refresh_from_db()
+        self.assertEqual(self.alocacao.sala, self.sala_b)
+        self.assertEqual(self.alocacao.horario, self.horario)
+        self.assertEqual(self.alocacao.historico.count(), 1)
+        self.assertEqual(
+            self.alocacao.historico.first().motivo,
+            "Ar-condicionado quebrado",
+        )
+
+    def test_troca_de_horario(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            self.url,
+            {"horario": self.horario_livre.id, "motivo": "Reposição"},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.alocacao.refresh_from_db()
+        self.assertEqual(self.alocacao.horario, self.horario_livre)
+
+    def test_troca_exige_motivo(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            self.url,
+            {"sala": self.sala_b.id, "motivo": "   "},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Historico.objects.count(), 0)
+
+    def test_troca_exige_sala_ou_horario(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            self.url, {"motivo": "Sem alteração"}, format="json"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_troca_sem_mudanca_real_e_rejeitada(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            self.url,
+            {"sala": self.sala_a.id, "motivo": "Igual"},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Historico.objects.count(), 0)
+
+    def test_troca_com_conflito_de_sala_nao_altera_nem_gera_historico(self):
+        Alocacao.objects.create(
+            horario=self.horario_livre,
+            professor=Professor.objects.create(
+                email="outro@teste.com",
+                nome="Outro",
+                matricula=777002,
+                senha="x",
+            ),
+            sala=self.sala_b,
+            turma=self.turma_2,
+            disciplina=self.disciplina,
+            coordenador=self.coordenador,
+        )
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            self.url,
+            {
+                "sala": self.sala_b.id,
+                "horario": self.horario_livre.id,
+                "motivo": "Teste conflito",
+            },
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.alocacao.refresh_from_db()
+        self.assertEqual(self.alocacao.sala, self.sala_a)
+        self.assertEqual(Historico.objects.count(), 0)
+
+    def test_professor_nao_pode_trocar(self):
+        self.client.force_authenticate(user=self.professor_usuario)
+
+        resposta = self.client.post(
+            self.url,
+            {"sala": self.sala_b.id, "motivo": "Tentativa"},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_troca_de_alocacao_inexistente_retorna_404(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            "/api/ensalamento/alocacoes/99999/trocar/",
+            {"sala": self.sala_b.id, "motivo": "x"},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_historico_lista_e_filtra_por_alocacao(self):
+        self.client.force_authenticate(user=self.admin)
+        self.client.post(
+            self.url,
+            {"sala": self.sala_b.id, "motivo": "Primeira"},
+            format="json",
+        )
+
+        resposta = self.client.get(
+            f"/api/ensalamento/historico/?alocacao={self.alocacao.id}"
+        )
+        vazia = self.client.get("/api/ensalamento/historico/?alocacao=999")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resposta.data), 1)
+        self.assertEqual(resposta.data[0]["motivo"], "Primeira")
+        self.assertEqual(resposta.data[0]["sala"], "A102")
+        self.assertEqual(len(vazia.data), 0)
+
+    def test_historico_exige_autenticacao(self):
+        resposta = self.client.get("/api/ensalamento/historico/")
+
+        self.assertEqual(resposta.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_painel_e_publico_e_lista_aulas_do_dia(self):
+        resposta = self.client.get("/api/ensalamento/painel/?data=2026-11-20")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.data["data"], "2026-11-20")
+        self.assertEqual(len(resposta.data["aulas"]), 1)
+        aula = resposta.data["aulas"][0]
+        self.assertEqual(aula["sala"], "A101")
+        self.assertEqual(aula["hora_inicio"], "08:00")
+        self.assertEqual(aula["professor"], "Professor Troca")
+        self.assertNotIn("email", aula)
+
+    def test_painel_dia_sem_aulas(self):
+        resposta = self.client.get("/api/ensalamento/painel/?data=2030-01-01")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.data["aulas"], [])
+
+    def test_painel_data_invalida(self):
+        resposta = self.client.get("/api/ensalamento/painel/?data=abc")
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_painel_reflete_troca_de_sala(self):
+        self.client.force_authenticate(user=self.admin)
+        self.client.post(
+            self.url,
+            {"sala": self.sala_b.id, "motivo": "Troca"},
+            format="json",
+        )
+        self.client.force_authenticate(user=None)
+
+        resposta = self.client.get("/api/ensalamento/painel/?data=2026-11-20")
+
+        self.assertEqual(resposta.data["aulas"][0]["sala"], "A102")

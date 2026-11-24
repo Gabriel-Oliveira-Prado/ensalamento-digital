@@ -78,12 +78,40 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# PostgreSQL is the project default. SQLite remains available only when
+# DATABASE_ENGINE=sqlite is explicitly set, which is useful for quick tests.
+DATABASE_ENGINE = os.environ.get("DATABASE_ENGINE", "postgresql").lower()
+
+if DATABASE_ENGINE == "sqlite":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+elif DATABASE_ENGINE in {"postgres", "postgresql"}:
+    database_options = {}
+    postgres_sslmode = os.environ.get("POSTGRES_SSLMODE")
+
+    if postgres_sslmode:
+        database_options["sslmode"] = postgres_sslmode
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "ensalamento"),
+            "USER": os.environ.get("POSTGRES_USER", "ensalamento"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "ensalamento"),
+            "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+            "CONN_MAX_AGE": int(os.environ.get("POSTGRES_CONN_MAX_AGE", "60")),
+            "OPTIONS": database_options,
+        }
+    }
+else:
+    raise ValueError(
+        "DATABASE_ENGINE deve ser 'postgresql' ou 'sqlite'."
+    )
 
 
 # Password validation
