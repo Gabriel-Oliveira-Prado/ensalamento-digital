@@ -1,12 +1,14 @@
 import logo from "@/assets/dark.svg";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/services/api";
 import { useAuthStore } from "@/stores/auth.store";
+import axios from "axios";
 import { FormProvider, useForm, type UseFormReturn } from "react-hook-form";
 import { Link, Navigate } from "react-router-dom";
 
 interface Login {
-    login: string;
+    email: string;
     password: string;
 }
 
@@ -64,7 +66,6 @@ function Sidebar() {
 import serEduLogo from "@/assets/ser_educacional.png";
 import { InputText } from "@/components/input.text";
 import { Spinner } from "@/components/ui/spinner";
-import { delay } from "@/utils/delay";
 import { Eye, EyeClosed } from "lucide-react";
 import { useState } from "react";
 
@@ -77,16 +78,17 @@ function AuthCard({ form }: AuthCardType) {
     const [showPassword, setShowPassword] = useState(false);
 
     const onSubmit = async (data: Login) => {
-        // TODO apenas para teste.
-        await delay(1000).finally(() => {
-            if (data.login !== "Rober" || data.password !== "123456") {
-                form.setError("password", { message: "Nome ou senha incorretos" });
-                return;
-            }
+        try {
+            const response = await api.post<{ access: string }>("/auth/token/", data);
+            login({ email: data.email }, response.data.access);
+        } catch (error) {
+            const message =
+                axios.isAxiosError(error) && error.response?.status === 401
+                    ? "E-mail ou senha incorretos"
+                    : "Não foi possível conectar à API";
 
-            login({ login: data.login, password: data.password }, "fake-token");
-            console.log(data);
-        });
+            form.setError("password", { message });
+        }
     };
 
     const handleShowPassword = () => {
@@ -109,11 +111,12 @@ function AuthCard({ form }: AuthCardType) {
                     <FormProvider {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="gap-2 space-y-4 py-4" id="form">
                             <InputText
-                                name="login"
+                                name="email"
                                 control={form.control}
-                                label="Nome"
+                                label="E-mail"
                                 id="form-login"
-                                placeholder="Digite seu nome"
+                                autoComplete="email"
+                                placeholder="Digite seu e-mail"
                                 rules={{
                                     required: true,
                                 }}

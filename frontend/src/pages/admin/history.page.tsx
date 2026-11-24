@@ -12,7 +12,12 @@ export function HistoryPage() {
     useEffect(() => {
         setPageHeader({
             shortTitle: "Histórico",
+<<<<<<< HEAD
             shortDescription: "Quem trocou, quando, e porquê.",
+=======
+            shortDescription: "Consulte o histórico de alterações.",
+            spanDescription: "Acompanhe as alterações realizadas nas salas, horários e alocações",
+>>>>>>> 462ba35b0461be9e7d1edfa60eccd6c0246ea7fd
         });
 
         return () => {
@@ -30,6 +35,7 @@ export function HistoryPage() {
                     id="busca"
                 />
 
+<<<<<<< HEAD
                 <div class="filter">
                     Período: 30 dias <ChevronDown class="chevron" />
                 </div>
@@ -110,4 +116,7 @@ export function HistoryPage() {
             <p class="count"> Mostrando 3 de 12 </p>
         </div>
     );
+=======
+    return <h1>Histórico de alterações</h1>;
+>>>>>>> 462ba35b0461be9e7d1edfa60eccd6c0246ea7fd
 }
