@@ -1,3 +1,4 @@
+
 from rest_framework import serializers
 
 from .models import (
@@ -17,6 +18,10 @@ from .models import (
 )
 
 
+# ============================================================
+# RECURSOS
+# ============================================================
+
 class RecursoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recurso
@@ -33,6 +38,10 @@ class RecursoSerializer(serializers.ModelSerializer):
 
         return nome
 
+
+# ============================================================
+# SALAS
+# ============================================================
 
 class SalaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -60,6 +69,18 @@ class SalaSerializer(serializers.ModelSerializer):
 
         return tipo
 
+    def validate_capacidade(self, value):
+        if value <= 0:
+            raise serializers.ValidationError(
+                "A capacidade da sala deve ser maior que zero."
+            )
+
+        return value
+
+
+# ============================================================
+# DISCIPLINAS
+# ============================================================
 
 class DisciplinaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,10 +98,21 @@ class DisciplinaSerializer(serializers.ModelSerializer):
 
         return nome
 
+
+# ============================================================
+# SEMESTRES
+# ============================================================
+
 class SemestreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semestre
-        fields = ["id", "ano", "periodo", "data_inicio", "data_fim"]
+        fields = [
+            "id",
+            "ano",
+            "periodo",
+            "data_inicio",
+            "data_fim",
+        ]
         read_only_fields = ["id"]
 
     def validate(self, attrs):
@@ -88,18 +120,25 @@ class SemestreSerializer(serializers.ModelSerializer):
             "data_inicio",
             getattr(self.instance, "data_inicio", None),
         )
+
         data_fim = attrs.get(
             "data_fim",
             getattr(self.instance, "data_fim", None),
         )
 
         if data_inicio and data_fim and data_fim <= data_inicio:
-            raise serializers.ValidationError(
-                "A data final deve ser posterior à data inicial."
-            )
+            raise serializers.ValidationError({
+                "data_fim": (
+                    "A data final deve ser posterior à data inicial."
+                )
+            })
 
         return attrs
 
+
+# ============================================================
+# TURMAS
+# ============================================================
 
 class TurmaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -107,11 +146,28 @@ class TurmaSerializer(serializers.ModelSerializer):
         fields = ["id", "qtd_aluno", "semestre"]
         read_only_fields = ["id"]
 
+    def validate_qtd_aluno(self, value):
+        if value <= 0:
+            raise serializers.ValidationError(
+                "A quantidade de alunos deve ser maior que zero."
+            )
+
+        return value
+
+
+# ============================================================
+# HORÁRIOS
+# ============================================================
 
 class HorarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Horario
-        fields = ["id", "dia", "hora_inicio", "hora_fim"]
+        fields = [
+            "id",
+            "dia",
+            "hora_inicio",
+            "hora_fim",
+        ]
         read_only_fields = ["id"]
 
     def validate(self, attrs):
@@ -126,11 +182,18 @@ class HorarioSerializer(serializers.ModelSerializer):
         )
 
         if hora_inicio and hora_fim and hora_fim <= hora_inicio:
-            raise serializers.ValidationError(
-                "A hora final deve ser posterior à hora inicial."
-            )
+            raise serializers.ValidationError({
+                "hora_fim": (
+                    "A hora final deve ser posterior à hora inicial."
+                )
+            })
 
         return attrs
+
+
+# ============================================================
+# RELACIONAMENTO: SALA POSSUI RECURSO
+# ============================================================
 
 class PossuiSerializer(serializers.ModelSerializer):
     class Meta:
@@ -139,18 +202,38 @@ class PossuiSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
     def validate(self, attrs):
-        sala = attrs["sala"]
-        recurso = attrs["recurso"]
+        sala = attrs.get(
+            "sala",
+            getattr(self.instance, "sala", None),
+        )
 
-        if Possui.objects.filter(
+        recurso = attrs.get(
+            "recurso",
+            getattr(self.instance, "recurso", None),
+        )
+
+        if sala is None or recurso is None:
+            return attrs
+
+        consulta = Possui.objects.filter(
             sala=sala,
             recurso=recurso,
-        ).exists():
+        )
+
+        if self.instance:
+            consulta = consulta.exclude(pk=self.instance.pk)
+
+        if consulta.exists():
             raise serializers.ValidationError(
                 "Este recurso já está associado a esta sala."
             )
 
         return attrs
+
+
+# ============================================================
+# RELACIONAMENTO: DISCIPLINA NECESSITA DE RECURSO
+# ============================================================
 
 class NecessitaDeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -159,20 +242,84 @@ class NecessitaDeSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
     def validate(self, attrs):
-        disciplina = attrs["disciplina"]
-        recurso = attrs["recurso"]
+        disciplina = attrs.get(
+            "disciplina",
+            getattr(self.instance, "disciplina", None),
+        )
 
-        if NecessitaDe.objects.filter(
+        recurso = attrs.get(
+            "recurso",
+            getattr(self.instance, "recurso", None),
+        )
+
+        if disciplina is None or recurso is None:
+            return attrs
+
+        consulta = NecessitaDe.objects.filter(
             disciplina=disciplina,
             recurso=recurso,
-        ).exists():
+        )
+
+        if self.instance:
+            consulta = consulta.exclude(pk=self.instance.pk)
+
+        if consulta.exists():
             raise serializers.ValidationError(
                 "Este recurso já é exigido por esta disciplina."
             )
 
         return attrs
 
+
+# ============================================================
+# PROFESSORES
+# ============================================================
+
+class ProfessorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Professor
+        fields = ["id", "nome", "matricula", "usuario"]
+        read_only_fields = ["id"]
+
+    def validate_nome(self, value):
+        nome = value.strip()
+
+        if not nome:
+            raise serializers.ValidationError(
+                "O nome do professor não pode ficar vazio."
+            )
+
+        return nome
+
+
+# ============================================================
+# COORDENADORES
+# ============================================================
+
+class CoordenadorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coordenador
+        fields = ["id", "nome", "usuario"]
+        read_only_fields = ["id"]
+
+    def validate_nome(self, value):
+        nome = value.strip()
+
+        if not nome:
+            raise serializers.ValidationError(
+                "O nome do coordenador não pode ficar vazio."
+            )
+
+        return nome
+
+
+# ============================================================
+# ALOCAÇÕES
+# ============================================================
+
 class AlocacaoSerializer(serializers.ModelSerializer):
+    aviso_capacidade = serializers.SerializerMethodField()
+
     class Meta:
         model = Alocacao
         fields = [
@@ -183,33 +330,55 @@ class AlocacaoSerializer(serializers.ModelSerializer):
             "turma",
             "disciplina",
             "coordenador",
+            "aviso_capacidade",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "aviso_capacidade"]
+
+    def get_aviso_capacidade(self, obj):
+        if obj.turma.qtd_aluno > obj.sala.capacidade:
+            return (
+                "A quantidade de alunos da turma é maior "
+                "que a capacidade da sala."
+            )
+
+        return None
 
     def validate(self, attrs):
         horario = attrs.get(
             "horario",
             getattr(self.instance, "horario", None),
         )
+
         professor = attrs.get(
             "professor",
             getattr(self.instance, "professor", None),
         )
+
         sala = attrs.get(
             "sala",
             getattr(self.instance, "sala", None),
         )
+
         turma = attrs.get(
             "turma",
             getattr(self.instance, "turma", None),
+        )
+
+        disciplina = attrs.get(
+            "disciplina",
+            getattr(self.instance, "disciplina", None),
         )
 
         conflitos = Alocacao.objects.all()
 
         if self.instance:
             conflitos = conflitos.exclude(
-                id=self.instance.id
+                pk=self.instance.pk
             )
+
+        # ----------------------------------------------------
+        # CONFLITO DE SALA
+        # ----------------------------------------------------
 
         if horario and sala:
             conflito_sala = conflitos.filter(
@@ -222,8 +391,14 @@ class AlocacaoSerializer(serializers.ModelSerializer):
             if conflito_sala:
                 raise serializers.ValidationError({
                     "erro": "conflito_sala",
-                    "detalhe": "A sala já está ocupada nesse horário.",
+                    "detalhe": (
+                        "A sala já está ocupada nesse horário."
+                    ),
                 })
+
+        # ----------------------------------------------------
+        # CONFLITO DE PROFESSOR
+        # ----------------------------------------------------
 
         if horario and professor:
             conflito_professor = conflitos.filter(
@@ -236,8 +411,14 @@ class AlocacaoSerializer(serializers.ModelSerializer):
             if conflito_professor:
                 raise serializers.ValidationError({
                     "erro": "conflito_professor",
-                    "detalhe": "O professor já possui uma aula nesse horário.",
+                    "detalhe": (
+                        "O professor já possui uma aula nesse horário."
+                    ),
                 })
+
+        # ----------------------------------------------------
+        # CONFLITO DE TURMA
+        # ----------------------------------------------------
 
         if horario and turma:
             conflito_turma = conflitos.filter(
@@ -250,21 +431,71 @@ class AlocacaoSerializer(serializers.ModelSerializer):
             if conflito_turma:
                 raise serializers.ValidationError({
                     "erro": "conflito_turma",
-                    "detalhe": "A turma já possui uma aula nesse horário.",
+                    "detalhe": (
+                        "A turma já possui uma aula nesse horário."
+                    ),
+                })
+
+        # ----------------------------------------------------
+        # RECURSOS NECESSÁRIOS PELA DISCIPLINA
+        # ----------------------------------------------------
+
+        if sala and disciplina:
+            recursos_necessarios = set(
+                NecessitaDe.objects.filter(
+                    disciplina=disciplina
+                ).values_list("recurso_id", flat=True)
+            )
+
+            recursos_disponiveis = set(
+                Possui.objects.filter(
+                    sala=sala
+                ).values_list("recurso_id", flat=True)
+            )
+
+            recursos_ausentes = recursos_necessarios - recursos_disponiveis
+
+            if recursos_ausentes:
+                nomes_recursos = list(
+                    Recurso.objects.filter(
+                        id__in=recursos_ausentes
+                    ).values_list("nome", flat=True)
+                )
+
+                raise serializers.ValidationError({
+                    "erro": "recursos_insuficientes",
+                    "detalhe": (
+                        "A sala não possui todos os recursos "
+                        "necessários para esta disciplina."
+                    ),
+                    "recursos_ausentes": nomes_recursos,
                 })
 
         return attrs
 
 
+# ============================================================
+# TROCA DIRETA DE ALOCAÇÃO
+# ============================================================
+
 class TrocaAlocacaoSerializer(serializers.Serializer):
-    """Valida o pedido de troca de sala e/ou horário de uma alocação."""
+    """
+    Valida uma alteração direta de sala e/ou horário.
+
+    A alteração efetiva é realizada pela view responsável,
+    que também registra o histórico.
+    """
 
     sala = serializers.PrimaryKeyRelatedField(
-        queryset=Sala.objects.all(), required=False
+        queryset=Sala.objects.all(),
+        required=False,
     )
+
     horario = serializers.PrimaryKeyRelatedField(
-        queryset=Horario.objects.all(), required=False
+        queryset=Horario.objects.all(),
+        required=False,
     )
+
     motivo = serializers.CharField(max_length=255)
 
     def validate_motivo(self, value):
@@ -278,7 +509,12 @@ class TrocaAlocacaoSerializer(serializers.Serializer):
         return motivo
 
     def validate(self, attrs):
-        alocacao = self.context["alocacao"]
+        alocacao = self.context.get("alocacao")
+
+        if alocacao is None:
+            raise serializers.ValidationError(
+                "A alocação não foi informada para validação."
+            )
 
         if "sala" not in attrs and "horario" not in attrs:
             raise serializers.ValidationError(
@@ -288,12 +524,14 @@ class TrocaAlocacaoSerializer(serializers.Serializer):
         nova_sala = attrs.get("sala", alocacao.sala)
         novo_horario = attrs.get("horario", alocacao.horario)
 
-        if nova_sala == alocacao.sala and novo_horario == alocacao.horario:
+        if (
+            nova_sala == alocacao.sala
+            and novo_horario == alocacao.horario
+        ):
             raise serializers.ValidationError(
                 "A troca não altera a sala nem o horário da alocação."
             )
 
-        # Reaproveita as regras de conflito de sala, professor e turma.
         validador = AlocacaoSerializer(
             instance=alocacao,
             data={
@@ -302,15 +540,72 @@ class TrocaAlocacaoSerializer(serializers.Serializer):
             },
             partial=True,
         )
+
         validador.is_valid(raise_exception=True)
 
         return attrs
 
 
+# ============================================================
+# SOLICITAÇÕES DE TROCA
+# ============================================================
+
+class SolicitacaoTrocaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SolicitacaoTroca
+        fields = [
+            "id",
+            "motivo",
+            "status",
+            "tipo_troca",
+            "alocacao_origem",
+            "alocacao_destino",
+            "professor_solicitante",
+        ]
+        read_only_fields = ["id", "status"]
+
+    def validate_motivo(self, value):
+        motivo = value.strip()
+
+        if not motivo:
+            raise serializers.ValidationError(
+                "O motivo da solicitação é obrigatório."
+            )
+
+        return motivo
+
+    def validate(self, attrs):
+        origem = attrs.get(
+            "alocacao_origem",
+            getattr(self.instance, "alocacao_origem", None),
+        )
+
+        destino = attrs.get(
+            "alocacao_destino",
+            getattr(self.instance, "alocacao_destino", None),
+        )
+
+        if origem and destino and origem == destino:
+            raise serializers.ValidationError(
+                "A alocação de origem e destino não podem ser iguais."
+            )
+
+        return attrs
+
+
+# ============================================================
+# HISTÓRICO
+# ============================================================
+
 class HistoricoSerializer(serializers.ModelSerializer):
-    sala = serializers.CharField(source="alocacao.sala.nome", read_only=True)
+    sala = serializers.CharField(
+        source="alocacao.sala.nome",
+        read_only=True,
+    )
+
     disciplina = serializers.CharField(
-        source="alocacao.disciplina.nome", read_only=True
+        source="alocacao.disciplina.nome",
+        read_only=True,
     )
 
     class Meta:
