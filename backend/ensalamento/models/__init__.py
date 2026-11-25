@@ -3,9 +3,11 @@ from .sala import Sala
 from .possui import Possui
 from .disciplina import Disciplina
 from .necessita_de import NecessitaDe
+from .semestre import Semestre
 from .turma import Turma
 from .horario import Horario
 from .professor import Professor
 from .coordenador import Coordenador
 from .alocacao import Alocacao
+from .solicitacao_troca import SolicitacaoTroca
 from .historico import Historico

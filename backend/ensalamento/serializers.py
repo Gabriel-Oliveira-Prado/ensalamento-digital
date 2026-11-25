@@ -11,6 +11,8 @@ from .models import (
     Professor,
     Recurso,
     Sala,
+    Semestre,
+    SolicitacaoTroca,
     Turma,
 )
 
@@ -75,10 +77,34 @@ class DisciplinaSerializer(serializers.ModelSerializer):
 
         return nome
 
+class SemestreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Semestre
+        fields = ["id", "ano", "periodo", "data_inicio", "data_fim"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        data_inicio = attrs.get(
+            "data_inicio",
+            getattr(self.instance, "data_inicio", None),
+        )
+        data_fim = attrs.get(
+            "data_fim",
+            getattr(self.instance, "data_fim", None),
+        )
+
+        if data_inicio and data_fim and data_fim <= data_inicio:
+            raise serializers.ValidationError(
+                "A data final deve ser posterior à data inicial."
+            )
+
+        return attrs
+
+
 class TurmaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Turma
-        fields = ["id", "qtd_aluno", "ano", "periodo"]
+        fields = ["id", "qtd_aluno", "semestre"]
         read_only_fields = ["id"]
 
 
@@ -294,6 +320,7 @@ class HistoricoSerializer(serializers.ModelSerializer):
             "data_alteracao",
             "motivo",
             "alocacao",
+            "solicitacao_troca",
             "sala",
             "disciplina",
         ]

@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -14,6 +15,7 @@ from .models import (
     Professor,
     Recurso,
     Sala,
+    Semestre,
     Turma,
 )
 
@@ -347,6 +349,71 @@ class DisciplinaCrudTests(TestCase):
         )
 
 
+class SemestreCrudTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.admin = Usuario.objects.create_user(
+            email="admin-semestre@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
+        )
+
+        self.professor = Usuario.objects.create_user(
+            email="professor-semestre@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
+
+        self.semestre = Semestre.objects.create(
+            ano=2026,
+            periodo=2,
+            data_inicio="2026-08-01",
+            data_fim="2026-12-15",
+        )
+
+    def test_professor_pode_listar_semestres(self):
+        self.client.force_authenticate(user=self.professor)
+
+        resposta = self.client.get("/api/ensalamento/semestres/")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resposta.data), 1)
+
+    def test_administrador_pode_criar_semestre(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            "/api/ensalamento/semestres/",
+            {
+                "ano": 2027,
+                "periodo": 1,
+                "data_inicio": "2027-02-01",
+                "data_fim": "2027-06-30",
+            },
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Semestre.objects.filter(ano=2027, periodo=1).exists())
+
+    def test_nao_pode_criar_semestre_com_data_fim_invalida(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.post(
+            "/api/ensalamento/semestres/",
+            {
+                "ano": 2027,
+                "periodo": 2,
+                "data_inicio": "2027-12-01",
+                "data_fim": "2027-08-01",
+            },
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+
+
 class TurmaCrudTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -363,10 +430,16 @@ class TurmaCrudTests(TestCase):
             tipo=Usuario.TipoUsuario.PROFESSOR,
         )
 
-        self.turma = Turma.objects.create(
-            qtd_aluno=35,
+        self.semestre = Semestre.objects.create(
             ano=2026,
             periodo=2,
+            data_inicio="2026-08-01",
+            data_fim="2026-12-15",
+        )
+
+        self.turma = Turma.objects.create(
+            qtd_aluno=35,
+            semestre=self.semestre,
         )
 
     def test_professor_pode_listar_turmas(self):
@@ -389,8 +462,7 @@ class TurmaCrudTests(TestCase):
             "/api/ensalamento/turmas/",
             {
                 "qtd_aluno": 40,
-                "ano": 2026,
-                "periodo": 1,
+                "semestre": self.semestre.id,
             },
             format="json",
         )
@@ -402,8 +474,7 @@ class TurmaCrudTests(TestCase):
         self.assertTrue(
             Turma.objects.filter(
                 qtd_aluno=40,
-                ano=2026,
-                periodo=1,
+                semestre=self.semestre,
             ).exists()
         )
 
@@ -414,8 +485,7 @@ class TurmaCrudTests(TestCase):
             "/api/ensalamento/turmas/",
             {
                 "qtd_aluno": 30,
-                "ano": 2026,
-                "periodo": 1,
+                "semestre": self.semestre.id,
             },
             format="json",
         )
@@ -469,8 +539,7 @@ class TurmaCrudTests(TestCase):
             "/api/ensalamento/turmas/",
             {
                 "qtd_aluno": -1,
-                "ano": 2026,
-                "periodo": 1,
+                "semestre": self.semestre.id,
             },
             format="json",
         )
@@ -855,16 +924,14 @@ class AlocacaoCrudTests(TestCase):
         )
 
         self.professor = Professor.objects.create(
-            email="professor-dominio@teste.com",
             nome="Professor Teste",
             matricula=123456,
-            senha="senha-legada",
+            usuario=self.professor_usuario,
         )
 
         self.coordenador = Coordenador.objects.create(
             nome="Coordenador Teste",
-            email="coordenador-dominio@teste.com",
-            senha="senha-legada",
+            usuario=self.coordenador_usuario,
         )
 
         self.sala = Sala.objects.create(
@@ -873,10 +940,16 @@ class AlocacaoCrudTests(TestCase):
             tipo="Sala de aula",
         )
 
-        self.turma = Turma.objects.create(
-            qtd_aluno=30,
+        self.semestre = Semestre.objects.create(
             ano=2026,
             periodo=2,
+            data_inicio="2026-08-01",
+            data_fim="2026-12-15",
+        )
+
+        self.turma = Turma.objects.create(
+            qtd_aluno=30,
+            semestre=self.semestre,
         )
 
         self.disciplina = Disciplina.objects.create(
@@ -932,8 +1005,7 @@ class AlocacaoCrudTests(TestCase):
 
         nova_turma = Turma.objects.create(
             qtd_aluno=25,
-            ano=2026,
-            periodo=2,
+            semestre=self.semestre,
         )
 
         self.client.force_authenticate(user=self.admin)
@@ -977,8 +1049,7 @@ class AlocacaoCrudTests(TestCase):
     def test_nao_pode_alocar_sala_em_horario_conflitante(self):
         nova_turma = Turma.objects.create(
             qtd_aluno=20,
-            ano=2026,
-            periodo=2,
+            semestre=self.semestre,
         )
 
         self.client.force_authenticate(user=self.admin)
@@ -1010,8 +1081,7 @@ class AlocacaoCrudTests(TestCase):
 
         nova_turma = Turma.objects.create(
             qtd_aluno=20,
-            ano=2026,
-            periodo=2,
+            semestre=self.semestre,
         )
 
         self.client.force_authenticate(user=self.admin)
@@ -1042,11 +1112,16 @@ class AlocacaoCrudTests(TestCase):
             tipo="Sala de aula",
         )
 
-        novo_professor = Professor.objects.create(
+        outro_professor_usuario = Usuario.objects.create_user(
             email="outro-professor@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
+
+        novo_professor = Professor.objects.create(
             nome="Outro Professor",
             matricula=654321,
-            senha="senha-legada",
+            usuario=outro_professor_usuario,
         )
 
         self.client.force_authenticate(user=self.admin)
@@ -1124,6 +1199,11 @@ class TrocaHistoricoPainelTests(TestCase):
             password="SenhaForte@123456",
             tipo=Usuario.TipoUsuario.ADMINISTRADOR,
         )
+        self.coordenador_usuario = Usuario.objects.create_user(
+            email="coord-troca@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.COORDENADOR,
+        )
         self.professor_usuario = Usuario.objects.create_user(
             email="prof-troca@teste.com",
             password="SenhaForte@123456",
@@ -1131,13 +1211,13 @@ class TrocaHistoricoPainelTests(TestCase):
         )
 
         self.professor = Professor.objects.create(
-            email="p-troca@teste.com",
             nome="Professor Troca",
             matricula=777001,
-            senha="x",
+            usuario=self.professor_usuario,
         )
         self.coordenador = Coordenador.objects.create(
-            nome="Coord Troca", email="c-troca@teste.com", senha="x"
+            nome="Coord Troca",
+            usuario=self.coordenador_usuario,
         )
         self.sala_a = Sala.objects.create(
             nome="A101", capacidade=40, tipo="Sala de aula"
@@ -1145,8 +1225,14 @@ class TrocaHistoricoPainelTests(TestCase):
         self.sala_b = Sala.objects.create(
             nome="A102", capacidade=40, tipo="Sala de aula"
         )
-        self.turma = Turma.objects.create(qtd_aluno=30, ano=2026, periodo=2)
-        self.turma_2 = Turma.objects.create(qtd_aluno=30, ano=2026, periodo=1)
+        self.semestre = Semestre.objects.create(
+            ano=2026,
+            periodo=2,
+            data_inicio="2026-08-01",
+            data_fim="2026-12-15",
+        )
+        self.turma = Turma.objects.create(qtd_aluno=30, semestre=self.semestre)
+        self.turma_2 = Turma.objects.create(qtd_aluno=30, semestre=self.semestre)
         self.disciplina = Disciplina.objects.create(nome="Redes")
         self.horario = Horario.objects.create(
             dia="2026-11-20", hora_inicio="08:00:00", hora_fim="10:00:00"
@@ -1231,13 +1317,17 @@ class TrocaHistoricoPainelTests(TestCase):
         self.assertEqual(Historico.objects.count(), 0)
 
     def test_troca_com_conflito_de_sala_nao_altera_nem_gera_historico(self):
+        outro_prof_user = Usuario.objects.create_user(
+            email="outro@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
         Alocacao.objects.create(
             horario=self.horario_livre,
             professor=Professor.objects.create(
-                email="outro@teste.com",
                 nome="Outro",
                 matricula=777002,
-                senha="x",
+                usuario=outro_prof_user,
             ),
             sala=self.sala_b,
             turma=self.turma_2,
@@ -1342,3 +1432,32 @@ class TrocaHistoricoPainelTests(TestCase):
         resposta = self.client.get("/api/ensalamento/painel/?data=2026-11-20")
 
         self.assertEqual(resposta.data["aulas"][0]["sala"], "A102")
+
+
+class PerfilUsuarioValidacaoTests(TestCase):
+    def setUp(self):
+        self.user_prof = Usuario.objects.create_user(
+            email="prof-val@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
+        self.user_coord = Usuario.objects.create_user(
+            email="coord-val@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.COORDENADOR,
+        )
+
+    def test_professor_rejeita_usuario_nao_professor(self):
+        with self.assertRaises(ValidationError):
+            Professor.objects.create(
+                nome="Coord Como Prof",
+                matricula=999001,
+                usuario=self.user_coord,
+            )
+
+    def test_coordenador_rejeita_usuario_nao_coordenador(self):
+        with self.assertRaises(ValidationError):
+            Coordenador.objects.create(
+                nome="Prof Como Coord",
+                usuario=self.user_prof,
+            )

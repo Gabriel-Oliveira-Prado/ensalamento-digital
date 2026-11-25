@@ -18,6 +18,8 @@ from .views import (
     RecursoListCreateView,
     SalaDetailView,
     SalaListCreateView,
+    SemestreDetailView,
+    SemestreListCreateView,
     TurmaDetailView,
     TurmaListCreateView,
 )
@@ -53,6 +55,16 @@ urlpatterns = [
         "disciplinas/<int:pk>/",
         DisciplinaDetailView.as_view(),
         name="disciplina-detail",
+    ),
+    path(
+        "semestres/",
+        SemestreListCreateView.as_view(),
+        name="semestre-list-create",
+    ),
+    path(
+        "semestres/<int:pk>/",
+        SemestreDetailView.as_view(),
+        name="semestre-detail",
     ),
     path(
         "turmas/",

@@ -22,6 +22,7 @@ from .models import (
     Possui,
     Recurso,
     Sala,
+    Semestre,
     Turma,
 )
 
@@ -37,6 +38,7 @@ from .serializers import (
     PossuiSerializer,
     RecursoSerializer,
     SalaSerializer,
+    SemestreSerializer,
     TurmaSerializer,
     AlocacaoSerializer,
     HistoricoSerializer,
@@ -83,9 +85,25 @@ class DisciplinaDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DisciplinaSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
+@extend_schema(tags=["Semestres"], description="Consulta e cadastra semestres letivos.")
+class SemestreListCreateView(generics.ListCreateAPIView):
+    queryset = Semestre.objects.all().order_by("ano", "periodo")
+    serializer_class = SemestreSerializer
+    permission_classes = [PodeConsultarGerenciarCadastros]
+
+
+@extend_schema(tags=["Semestres"], description="Consulta, atualiza ou exclui um semestre letivo.")
+class SemestreDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Semestre.objects.all()
+    serializer_class = SemestreSerializer
+    permission_classes = [PodeConsultarGerenciarCadastros]
+
+
 @extend_schema(tags=["Turmas"], description="Consulta e cadastra turmas.")
 class TurmaListCreateView(generics.ListCreateAPIView):
-    queryset = Turma.objects.all().order_by("ano", "periodo", "id")
+    queryset = Turma.objects.select_related("semestre").all().order_by(
+        "semestre__ano", "semestre__periodo", "id"
+    )
     serializer_class = TurmaSerializer
     permission_classes = [PodeConsultarGerenciarCadastros]
 
@@ -324,7 +342,7 @@ class PainelView(APIView):
 
         alocacoes = (
             Alocacao.objects.filter(horario__dia=dia)
-            .select_related("horario", "sala", "professor", "turma", "disciplina")
+            .select_related("horario", "sala", "professor", "turma__semestre", "disciplina")
             .order_by("horario__hora_inicio", "sala__nome")
         )
 
@@ -347,7 +365,7 @@ class PainelView(APIView):
                     "sala": a.sala.nome,
                     "disciplina": a.disciplina.nome,
                     "professor": a.professor.nome,
-                    "turma": f"{a.turma.ano}/{a.turma.periodo}",
+                    "turma": f"{a.turma.semestre.ano}/{a.turma.semestre.periodo}",
                     "situacao": situacao,
                 }
             )
