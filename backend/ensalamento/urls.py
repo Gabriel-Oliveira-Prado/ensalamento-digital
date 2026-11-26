@@ -1,3 +1,4 @@
+
 from django.urls import path
 
 from .views import (
@@ -18,12 +19,15 @@ from .views import (
     RecursoListCreateView,
     SalaDetailView,
     SalaListCreateView,
+    SemestreDetailView,
+    SemestreListCreateView,
     TurmaDetailView,
     TurmaListCreateView,
 )
 
 
 urlpatterns = [
+    # Recursos
     path(
         "recursos/",
         RecursoListCreateView.as_view(),
@@ -34,6 +38,8 @@ urlpatterns = [
         RecursoDetailView.as_view(),
         name="recurso-detail",
     ),
+
+    # Salas
     path(
         "salas/",
         SalaListCreateView.as_view(),
@@ -44,16 +50,32 @@ urlpatterns = [
         SalaDetailView.as_view(),
         name="sala-detail",
     ),
+
+    # Disciplinas
     path(
-    "disciplinas/",
-    DisciplinaListCreateView.as_view(),
-    name="disciplina-list-create",
+        "disciplinas/",
+        DisciplinaListCreateView.as_view(),
+        name="disciplina-list-create",
     ),
     path(
         "disciplinas/<int:pk>/",
         DisciplinaDetailView.as_view(),
         name="disciplina-detail",
     ),
+
+    # Semestres
+    path(
+        "semestres/",
+        SemestreListCreateView.as_view(),
+        name="semestre-list-create",
+    ),
+    path(
+        "semestres/<int:pk>/",
+        SemestreDetailView.as_view(),
+        name="semestre-detail",
+    ),
+
+    # Turmas
     path(
         "turmas/",
         TurmaListCreateView.as_view(),
@@ -64,6 +86,8 @@ urlpatterns = [
         TurmaDetailView.as_view(),
         name="turma-detail",
     ),
+
+    # Horários
     path(
         "horarios/",
         HorarioListCreateView.as_view(),
@@ -74,6 +98,8 @@ urlpatterns = [
         HorarioDetailView.as_view(),
         name="horario-detail",
     ),
+
+    # Relacionamento sala/recurso
     path(
         "possui/",
         PossuiListCreateView.as_view(),
@@ -84,6 +110,8 @@ urlpatterns = [
         PossuiDetailView.as_view(),
         name="possui-detail",
     ),
+
+    # Relacionamento disciplina/recurso
     path(
         "necessita-de/",
         NecessitaDeListCreateView.as_view(),
@@ -94,6 +122,8 @@ urlpatterns = [
         NecessitaDeDetailView.as_view(),
         name="necessita-de-detail",
     ),
+
+    # Alocações
     path(
         "alocacoes/",
         AlocacaoListCreateView.as_view(),
@@ -109,11 +139,15 @@ urlpatterns = [
         AlocacaoTrocaView.as_view(),
         name="alocacao-trocar",
     ),
+
+    # Histórico
     path(
         "historico/",
         HistoricoListView.as_view(),
         name="historico-list",
     ),
+
+    # Painel público
     path(
         "painel/",
         PainelView.as_view(),

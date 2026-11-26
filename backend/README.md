@@ -66,6 +66,26 @@ python manage.py runserver
 
 A API ficará disponível em `http://127.0.0.1:8000/`.
 
+## Documentação da API
+
+A documentação da API é gerada utilizando o **drf-spectacular**,
+seguindo a especificação OpenAPI.
+
+O projeto disponibiliza três recursos:
+
+- `/api/schema/` — disponibiliza o schema OpenAPI da API.
+- `/api/docs/` — documentação interativa utilizando Swagger UI.
+- `/api/redoc/` — documentação utilizando ReDoc.
+
+### Gerar e validar o schema
+
+Para gerar a documentação em formato YAML e validar sua estrutura,
+execute na pasta `backend`:
+
+```powershell
+python manage.py spectacular --validate --file schema.yml
+
+
 ## Testes
 
 Para executar rapidamente a suíte com um banco SQLite temporário:

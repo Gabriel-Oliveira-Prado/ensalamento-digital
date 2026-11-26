@@ -8,3 +8,4 @@ class HistoricoDTO:
     data_alteracao: datetime
     motivo: str
     alocacao_id: int
+    solicitacao_troca_id: int | None = None
