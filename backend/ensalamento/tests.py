@@ -1145,31 +1145,54 @@ class AlocacaoCrudTests(TestCase):
             "conflito_turma",
         )
 
-    def test_administrador_pode_atualizar_alocacao(self):
-        nova_sala = Sala.objects.create(
-            nome="B207",
-            capacidade=40,
-            tipo="Sala de aula",
-        )
+   
+def test_alteracao_de_sala_deve_usar_rota_de_troca(self):
+    nova_sala = Sala.objects.create(
+        nome="B207",
+        capacidade=40,
+        tipo="Sala de aula",
+    )
 
-        self.client.force_authenticate(user=self.admin)
+    self.client.force_authenticate(user=self.admin)
 
-        resposta = self.client.patch(
-            f"/api/ensalamento/alocacoes/{self.alocacao.id}/",
-            {"sala": nova_sala.id},
-            format="json",
-        )
+    resposta = self.client.patch(
+        f"/api/ensalamento/alocacoes/{self.alocacao.id}/",
+        {"sala": nova_sala.id},
+        format="json",
+    )
 
-        self.assertEqual(
-            resposta.status_code,
-            status.HTTP_200_OK,
-        )
+    self.assertEqual(
+        resposta.status_code,
+        status.HTTP_400_BAD_REQUEST,
+    )
 
-        self.alocacao.refresh_from_db()
-        self.assertEqual(
-            self.alocacao.sala.id,
-            nova_sala.id,
-        )
+    self.alocacao.refresh_from_db()
+
+    self.assertEqual(self.alocacao.sala, self.sala)
+    self.assertEqual(Historico.objects.count(), 0)
+
+    resposta_troca = self.client.post(
+        f"/api/ensalamento/alocacoes/{self.alocacao.id}/trocar/",
+        {
+            "sala": nova_sala.id,
+            "motivo": "Alteração administrativa de sala",
+        },
+        format="json",
+    )
+
+    self.assertEqual(
+        resposta_troca.status_code,
+        status.HTTP_200_OK,
+    )
+
+    self.alocacao.refresh_from_db()
+
+    self.assertEqual(self.alocacao.sala, nova_sala)
+    self.assertEqual(Historico.objects.count(), 1)
+    self.assertEqual(
+        self.alocacao.historico.first().motivo,
+        "Alteração administrativa de sala",
+    )
 
     def test_administrador_pode_excluir_alocacao(self):
         self.client.force_authenticate(user=self.admin)
