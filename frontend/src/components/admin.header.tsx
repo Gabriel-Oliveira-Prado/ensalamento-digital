@@ -7,7 +7,7 @@ export function AdminHeader() {
     const metadata = usePageHeaderStore((s) => s.metadata);
 
     return (
-        <header className="flex flex-1 items-center p-4 md:p-8">
+        <header className="flex w-full items-center p-4 md:p-8">
             <SidebarTrigger className="-ml-2.5 md:hidden" />
             <div className="flex flex-1 items-center justify-between">
                 <div className="items-left flex flex-col justify-center">
