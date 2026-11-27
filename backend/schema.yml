@@ -1,0 +1,1874 @@
+openapi: 3.0.3
+info:
+  title: API Ensalamento Digital
+  version: 0.1.0
+  description: API responsável pelo cadastro e ensalamento de turmas, salas, recursos
+    e horários.
+paths:
+  /api/auth/token/:
+    post:
+      operationId: auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/ensalamento/alocacoes/:
+    get:
+      operationId: ensalamento_alocacoes_list
+      summary: Lista alocações
+      tags:
+      - Alocações
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alocacao'
+          description: ''
+    post:
+      operationId: ensalamento_alocacoes_create
+      description: Cria uma alocação validando conflitos de sala, professor, turma
+        e recursos necessários.
+      summary: Cria uma alocação
+      tags:
+      - Alocações
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alocacao'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Alocacao'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Alocacao'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alocacao'
+          description: ''
+        '400':
+          description: Dados inválidos ou conflito de ensalamento.
+  /api/ensalamento/alocacoes/{id}/:
+    get:
+      operationId: ensalamento_alocacoes_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Alocações
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alocacao'
+          description: ''
+    put:
+      operationId: ensalamento_alocacoes_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Alocações
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alocacao'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Alocacao'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Alocacao'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alocacao'
+          description: ''
+    patch:
+      operationId: ensalamento_alocacoes_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Alocações
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAlocacao'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAlocacao'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAlocacao'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alocacao'
+          description: ''
+    delete:
+      operationId: ensalamento_alocacoes_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Alocações
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ensalamento/alocacoes/{id}/trocar/:
+    post:
+      operationId: ensalamento_alocacoes_trocar_create
+      description: Altera a sala e/ou o horário, valida conflitos e registra o motivo
+        no histórico.
+      summary: Troca sala e/ou horário de uma alocação
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Alocações
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrocaAlocacao'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrocaAlocacao'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrocaAlocacao'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Alocação atualizada e histórico registrado.
+        '400':
+          description: Dados inválidos ou conflito de ensalamento.
+        '404':
+          description: Alocação não encontrada.
+  /api/ensalamento/disciplinas/:
+    get:
+      operationId: ensalamento_disciplinas_list
+      tags:
+      - Disciplinas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Disciplina'
+          description: ''
+    post:
+      operationId: ensalamento_disciplinas_create
+      tags:
+      - Disciplinas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Disciplina'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Disciplina'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Disciplina'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Disciplina'
+          description: ''
+  /api/ensalamento/disciplinas/{id}/:
+    get:
+      operationId: ensalamento_disciplinas_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Disciplinas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Disciplina'
+          description: ''
+    put:
+      operationId: ensalamento_disciplinas_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Disciplinas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Disciplina'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Disciplina'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Disciplina'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Disciplina'
+          description: ''
+    patch:
+      operationId: ensalamento_disciplinas_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Disciplinas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDisciplina'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDisciplina'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDisciplina'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Disciplina'
+          description: ''
+    delete:
+      operationId: ensalamento_disciplinas_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Disciplinas
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ensalamento/historico/:
+    get:
+      operationId: ensalamento_historico_list
+      description: Lista o histórico. Aceita o filtro ?alocacao=<id>.
+      tags:
+      - Histórico
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Historico'
+          description: ''
+  /api/ensalamento/horarios/:
+    get:
+      operationId: ensalamento_horarios_list
+      tags:
+      - Horários
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Horario'
+          description: ''
+    post:
+      operationId: ensalamento_horarios_create
+      tags:
+      - Horários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Horario'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Horario'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Horario'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Horario'
+          description: ''
+  /api/ensalamento/horarios/{id}/:
+    get:
+      operationId: ensalamento_horarios_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Horários
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Horario'
+          description: ''
+    put:
+      operationId: ensalamento_horarios_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Horários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Horario'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Horario'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Horario'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Horario'
+          description: ''
+    patch:
+      operationId: ensalamento_horarios_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Horários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHorario'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHorario'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHorario'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Horario'
+          description: ''
+    delete:
+      operationId: ensalamento_horarios_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Horários
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ensalamento/necessita-de/:
+    get:
+      operationId: ensalamento_necessita_de_list
+      tags:
+      - Relacionamentos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NecessitaDe'
+          description: ''
+    post:
+      operationId: ensalamento_necessita_de_create
+      tags:
+      - Relacionamentos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NecessitaDe'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NecessitaDe'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NecessitaDe'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NecessitaDe'
+          description: ''
+  /api/ensalamento/necessita-de/{id}/:
+    get:
+      operationId: ensalamento_necessita_de_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Relacionamentos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NecessitaDe'
+          description: ''
+    delete:
+      operationId: ensalamento_necessita_de_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Relacionamentos
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ensalamento/painel/:
+    get:
+      operationId: ensalamento_painel_retrieve
+      description: Aulas do dia para o painel da TV. Público. Aceita ?data=AAAA-MM-DD.
+      tags:
+      - Painel
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Painel'
+          description: ''
+        '400':
+          description: Data inválida. Use o formato AAAA-MM-DD.
+  /api/ensalamento/possui/:
+    get:
+      operationId: ensalamento_possui_list
+      tags:
+      - Relacionamentos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Possui'
+          description: ''
+    post:
+      operationId: ensalamento_possui_create
+      tags:
+      - Relacionamentos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Possui'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Possui'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Possui'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Possui'
+          description: ''
+  /api/ensalamento/possui/{id}/:
+    get:
+      operationId: ensalamento_possui_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Relacionamentos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Possui'
+          description: ''
+    delete:
+      operationId: ensalamento_possui_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Relacionamentos
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ensalamento/recursos/:
+    get:
+      operationId: ensalamento_recursos_list
+      tags:
+      - Recursos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recurso'
+          description: ''
+    post:
+      operationId: ensalamento_recursos_create
+      tags:
+      - Recursos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recurso'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Recurso'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Recurso'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recurso'
+          description: ''
+  /api/ensalamento/recursos/{id}/:
+    get:
+      operationId: ensalamento_recursos_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Recursos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recurso'
+          description: ''
+    put:
+      operationId: ensalamento_recursos_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Recursos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recurso'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Recurso'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Recurso'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recurso'
+          description: ''
+    patch:
+      operationId: ensalamento_recursos_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Recursos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRecurso'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRecurso'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRecurso'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recurso'
+          description: ''
+    delete:
+      operationId: ensalamento_recursos_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Recursos
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ensalamento/salas/:
+    get:
+      operationId: ensalamento_salas_list
+      tags:
+      - Salas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sala'
+          description: ''
+    post:
+      operationId: ensalamento_salas_create
+      tags:
+      - Salas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sala'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Sala'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Sala'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sala'
+          description: ''
+  /api/ensalamento/salas/{id}/:
+    get:
+      operationId: ensalamento_salas_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Salas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sala'
+          description: ''
+    put:
+      operationId: ensalamento_salas_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Salas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sala'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Sala'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Sala'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sala'
+          description: ''
+    patch:
+      operationId: ensalamento_salas_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Salas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSala'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSala'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSala'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sala'
+          description: ''
+    delete:
+      operationId: ensalamento_salas_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Salas
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ensalamento/semestres/:
+    get:
+      operationId: ensalamento_semestres_list
+      tags:
+      - Semestres
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Semestre'
+          description: ''
+    post:
+      operationId: ensalamento_semestres_create
+      tags:
+      - Semestres
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Semestre'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Semestre'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Semestre'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Semestre'
+          description: ''
+  /api/ensalamento/semestres/{id}/:
+    get:
+      operationId: ensalamento_semestres_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Semestres
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Semestre'
+          description: ''
+    put:
+      operationId: ensalamento_semestres_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Semestres
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Semestre'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Semestre'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Semestre'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Semestre'
+          description: ''
+    patch:
+      operationId: ensalamento_semestres_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Semestres
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSemestre'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSemestre'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSemestre'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Semestre'
+          description: ''
+    delete:
+      operationId: ensalamento_semestres_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Semestres
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ensalamento/turmas/:
+    get:
+      operationId: ensalamento_turmas_list
+      tags:
+      - Turmas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Turma'
+          description: ''
+    post:
+      operationId: ensalamento_turmas_create
+      tags:
+      - Turmas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Turma'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Turma'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Turma'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turma'
+          description: ''
+  /api/ensalamento/turmas/{id}/:
+    get:
+      operationId: ensalamento_turmas_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Turmas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turma'
+          description: ''
+    put:
+      operationId: ensalamento_turmas_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Turmas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Turma'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Turma'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Turma'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turma'
+          description: ''
+    patch:
+      operationId: ensalamento_turmas_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Turmas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTurma'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTurma'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTurma'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turma'
+          description: ''
+    delete:
+      operationId: ensalamento_turmas_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Turmas
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/usuarios/:
+    post:
+      operationId: usuarios_create
+      description: Cadastra usuários. Administradores cadastram coordenadores e professores;
+        coordenadores cadastram professores.
+      tags:
+      - Usuários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+  /api/usuarios/{id}/:
+    get:
+      operationId: usuarios_retrieve
+      description: Consulta um usuário pelo identificador.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Usuários
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+  /api/usuarios/{id}/atualizar/:
+    put:
+      operationId: usuarios_atualizar_update
+      description: Atualiza os dados de um usuário.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Usuários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+    patch:
+      operationId: usuarios_atualizar_partial_update
+      description: Atualiza os dados de um usuário.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Usuários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuario'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuario'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuario'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+  /api/usuarios/{id}/excluir/:
+    delete:
+      operationId: usuarios_excluir_destroy
+      description: Exclui um usuário. O usuário autenticado não pode excluir a própria
+        conta.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Usuários
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/usuarios/lista/:
+    get:
+      operationId: usuarios_lista_list
+      description: Lista os usuários autorizados.
+      tags:
+      - Usuários
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+          description: ''
+components:
+  schemas:
+    Alocacao:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        horario:
+          type: integer
+        professor:
+          type: integer
+        sala:
+          type: integer
+        turma:
+          type: integer
+        disciplina:
+          type: integer
+        coordenador:
+          type: integer
+        aviso_capacidade:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - aviso_capacidade
+      - coordenador
+      - disciplina
+      - horario
+      - id
+      - professor
+      - sala
+      - turma
+    Disciplina:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 150
+      required:
+      - id
+      - nome
+    Historico:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        data_alteracao:
+          type: string
+          format: date-time
+          readOnly: true
+        motivo:
+          type: string
+          readOnly: true
+        alocacao:
+          type: integer
+          readOnly: true
+        solicitacao_troca:
+          type: integer
+          readOnly: true
+          nullable: true
+        sala:
+          type: string
+          readOnly: true
+        disciplina:
+          type: string
+          readOnly: true
+      required:
+      - alocacao
+      - data_alteracao
+      - disciplina
+      - id
+      - motivo
+      - sala
+      - solicitacao_troca
+    Horario:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        dia:
+          type: string
+          format: date
+        hora_inicio:
+          type: string
+          format: time
+        hora_fim:
+          type: string
+          format: time
+      required:
+      - dia
+      - hora_fim
+      - hora_inicio
+      - id
+    NecessitaDe:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        disciplina:
+          type: integer
+        recurso:
+          type: integer
+      required:
+      - disciplina
+      - id
+      - recurso
+    Painel:
+      type: object
+      properties:
+        data:
+          type: string
+          format: date
+        atualizado_em:
+          type: string
+          format: date-time
+        aulas:
+          type: array
+          items:
+            $ref: '#/components/schemas/PainelAula'
+      required:
+      - atualizado_em
+      - aulas
+      - data
+    PainelAula:
+      type: object
+      properties:
+        id:
+          type: integer
+        hora_inicio:
+          type: string
+        hora_fim:
+          type: string
+        sala:
+          type: string
+        disciplina:
+          type: string
+        professor:
+          type: string
+        turma:
+          type: string
+        situacao:
+          $ref: '#/components/schemas/SituacaoEnum'
+      required:
+      - disciplina
+      - hora_fim
+      - hora_inicio
+      - id
+      - professor
+      - sala
+      - situacao
+      - turma
+    PatchedAlocacao:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        horario:
+          type: integer
+        professor:
+          type: integer
+        sala:
+          type: integer
+        turma:
+          type: integer
+        disciplina:
+          type: integer
+        coordenador:
+          type: integer
+        aviso_capacidade:
+          type: string
+          nullable: true
+          readOnly: true
+    PatchedDisciplina:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 150
+    PatchedHorario:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        dia:
+          type: string
+          format: date
+        hora_inicio:
+          type: string
+          format: time
+        hora_fim:
+          type: string
+          format: time
+    PatchedRecurso:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+    PatchedSala:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        capacidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        tipo:
+          type: string
+          maxLength: 100
+    PatchedSemestre:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ano:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        periodo:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        data_inicio:
+          type: string
+          format: date
+        data_fim:
+          type: string
+          format: date
+    PatchedTurma:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        qtd_aluno:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        semestre:
+          type: integer
+    PatchedUsuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          title: Primeiro nome
+          maxLength: 150
+        last_name:
+          type: string
+          title: Último nome
+          maxLength: 150
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+    Possui:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        sala:
+          type: integer
+        recurso:
+          type: integer
+      required:
+      - id
+      - recurso
+      - sala
+    Recurso:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+      required:
+      - id
+      - nome
+    Sala:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        capacidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        tipo:
+          type: string
+          maxLength: 100
+      required:
+      - capacidade
+      - id
+      - nome
+      - tipo
+    Semestre:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ano:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        periodo:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        data_inicio:
+          type: string
+          format: date
+        data_fim:
+          type: string
+          format: date
+      required:
+      - ano
+      - data_fim
+      - data_inicio
+      - id
+      - periodo
+    SituacaoEnum:
+      enum:
+      - agendada
+      - encerrada
+      - em_andamento
+      - proxima
+      type: string
+      description: |-
+        * `agendada` - agendada
+        * `encerrada` - encerrada
+        * `em_andamento` - em_andamento
+        * `proxima` - proxima
+    TipoEnum:
+      enum:
+      - PROFESSOR
+      - COORDENADOR
+      - ADMINISTRADOR
+      type: string
+      description: |-
+        * `PROFESSOR` - Professor
+        * `COORDENADOR` - Coordenador
+        * `ADMINISTRADOR` - Administrador
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TrocaAlocacao:
+      type: object
+      properties:
+        sala:
+          type: integer
+        horario:
+          type: integer
+        motivo:
+          type: string
+          maxLength: 255
+      required:
+      - motivo
+    Turma:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        qtd_aluno:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        semestre:
+          type: integer
+      required:
+      - id
+      - qtd_aluno
+      - semestre
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          title: Primeiro nome
+          maxLength: 150
+        last_name:
+          type: string
+          title: Último nome
+          maxLength: 150
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+      required:
+      - email
+      - id
+      - tipo
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

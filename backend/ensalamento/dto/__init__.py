@@ -3,9 +3,11 @@ from .sala_dto import SalaDTO
 from .possui_dto import PossuiDTO
 from .disciplina_dto import DisciplinaDTO
 from .necessita_de_dto import NecessitaDeDTO
+from .semestre_dto import SemestreDTO
 from .turma_dto import TurmaDTO
 from .horario_dto import HorarioDTO
 from .professor_dto import ProfessorDTO
 from .coordenador_dto import CoordenadorDTO
 from .alocacao_dto import AlocacaoDTO
+from .solicitacao_troca_dto import SolicitacaoTrocaDTO
 from .historico_dto import HistoricoDTO

@@ -38,14 +38,12 @@ export function HomePage() {
     useEffect(() => {
         setPageHeader({
             shortTitle: "Ensalamento",
-            spanTitle: " semanal",
-            shortDescription: "Semestre 2026.2",
-            spanDescription: " · alocação de turmas por dia e horário",
+            spanTitle: " integrado",
+            shortDescription: "Dados em tempo real",
+            spanDescription: " · frontend conectado à API Django",
         });
 
-        return () => {
-            resetPageHeader();
-        };
+        return () => resetPageHeader();
     }, [setPageHeader, resetPageHeader]);
 
     return (
