@@ -2,7 +2,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import { Navigate, Outlet } from "react-router-dom";
 
 export function ProtectedRoute() {
-    const token = useAuthStore((s) => s.token);
+    const token = useAuthStore((s) => s.access);
 
     if (!token) {
         return <Navigate to="/admin/auth" />;
