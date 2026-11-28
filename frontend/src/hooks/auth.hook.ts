@@ -7,7 +7,7 @@ export function useLogin() {
 
     return useMutation({
         mutationFn: (data: { email: string; password: string }) =>
-            api.post<{ access: string; refresh: string }>("/auth/token", data),
+            api.post<{ access: string; refresh: string }>("/auth/token/", data),
         onSuccess: (res, data) => {
             const { access, refresh } = res.data;
             login({ email: data.email }, access, refresh);

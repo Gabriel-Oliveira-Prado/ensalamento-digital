@@ -78,7 +78,7 @@ function AuthCard({ form }: AuthCardType) {
 
     useEffect(() => {
         if (isError) {
-            form.setError("password", { message: error.message });
+            form.setError("password", { message: "Email ou senha inválidos" });
         }
     }, [error?.message, form, isError]);
 
