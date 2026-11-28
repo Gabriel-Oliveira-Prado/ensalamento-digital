@@ -5,6 +5,8 @@ from .views import (
     AlocacaoDetailView,
     AlocacaoListCreateView,
     AlocacaoTrocaView,
+    CoordenadorDetailView,
+    CoordenadorListCreateView,
     DisciplinaDetailView,
     DisciplinaListCreateView,
     HistoricoListView,
@@ -15,6 +17,8 @@ from .views import (
     PainelView,
     PossuiDetailView,
     PossuiListCreateView,
+    ProfessorDetailView,
+    ProfessorListCreateView,
     RecursoDetailView,
     RecursoListCreateView,
     SalaDetailView,
@@ -145,6 +149,29 @@ urlpatterns = [
         "historico/",
         HistoricoListView.as_view(),
         name="historico-list",
+    ),
+        # Professores
+    path(
+        "professores/",
+        ProfessorListCreateView.as_view(),
+        name="professor-list-create",
+    ),
+    path(
+        "professores/<int:pk>/",
+        ProfessorDetailView.as_view(),
+        name="professor-detail",
+    ),
+
+    # Coordenadores
+    path(
+        "coordenadores/",
+        CoordenadorListCreateView.as_view(),
+        name="coordenador-list-create",
+    ),
+    path(
+        "coordenadores/<int:pk>/",
+        CoordenadorDetailView.as_view(),
+        name="coordenador-detail",
     ),
 
     # Painel público
