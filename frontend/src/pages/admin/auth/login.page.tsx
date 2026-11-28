@@ -85,7 +85,7 @@ function AuthCard({ form }: AuthCardType) {
             const message =
                 axios.isAxiosError(error) && error.response?.status === 401
                     ? "E-mail ou senha incorretos"
-                    : "Não foi possível conectar à API";
+                    : "Erro desconhecido no sistema";
 
             form.setError("password", { message });
         }
