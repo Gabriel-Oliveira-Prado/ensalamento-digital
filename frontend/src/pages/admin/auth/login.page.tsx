@@ -1,11 +1,16 @@
 import logo from "@/assets/dark.svg";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/services/api";
 import { useAuthStore } from "@/stores/auth.store";
-import axios from "axios";
 import { FormProvider, useForm, type UseFormReturn } from "react-hook-form";
 import { Link, Navigate } from "react-router-dom";
+
+import serEduLogo from "@/assets/ser_educacional.png";
+import { InputText } from "@/components/input.text";
+import { Spinner } from "@/components/ui/spinner";
+import { useLogin } from "@/hooks/auth.hook";
+import { Eye, EyeClosed } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Login {
     email: string;
@@ -13,7 +18,7 @@ interface Login {
 }
 
 export function LoginPage() {
-    const token = useAuthStore((s) => s.token);
+    const token = useAuthStore((s) => s.access);
 
     const form = useForm<Login>({
         mode: "onChange",
@@ -63,32 +68,27 @@ function Sidebar() {
     );
 }
 
-import serEduLogo from "@/assets/ser_educacional.png";
-import { InputText } from "@/components/input.text";
-import { Spinner } from "@/components/ui/spinner";
-import { Eye, EyeClosed } from "lucide-react";
-import { useState } from "react";
-
 interface AuthCardType {
     form: UseFormReturn<Login>;
 }
 
 function AuthCard({ form }: AuthCardType) {
-    const login = useAuthStore((s) => s.login);
+    const { mutate, isPending, isError, error } = useLogin();
     const [showPassword, setShowPassword] = useState(false);
 
-    const onSubmit = async (data: Login) => {
-        try {
-            const response = await api.post<{ access: string }>("/auth/token/", data);
-            login({ email: data.email }, response.data.access);
-        } catch (error) {
-            const message =
-                axios.isAxiosError(error) && error.response?.status === 401
-                    ? "E-mail ou senha incorretos"
-                    : "Erro desconhecido no sistema";
-
-            form.setError("password", { message });
+    useEffect(() => {
+        if (isError) {
+            form.setError("password", { message: error.message });
         }
+    }, [error?.message, form, isError]);
+
+    const onSubmit = async (data: Login) => {
+        if (!data.email || !data.password) {
+            form.setError("password", { message: "Email ou senha inválidos" });
+            return;
+        }
+
+        mutate(data);
     };
 
     const handleShowPassword = () => {
@@ -155,8 +155,8 @@ function AuthCard({ form }: AuthCardType) {
                         disabled={!form.formState.isValid || form.formState.isSubmitting}
                         className="bg-green-nassau hover:bg-green-nassau/75 mt-1 h-12.5 w-full cursor-pointer"
                     >
-                        {form.formState.isSubmitting && <Spinner />}
-                        {form.formState.isSubmitting ? "Entrando..." : "Entrar"}
+                        {isPending && <Spinner />}
+                        {isPending ? "Entrando..." : "Entrar"}
                     </Button>
                 </CardContent>
                 <CardFooter className="flex-col bg-transparent">
