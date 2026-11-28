@@ -1484,3 +1484,173 @@ class PerfilUsuarioValidacaoTests(TestCase):
                 nome="Prof Como Coord",
                 usuario=self.user_prof,
             )
+
+class ProfessorCoordenadorCrudTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.admin = Usuario.objects.create_user(
+            email="admin-cadastros@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.ADMINISTRADOR,
+        )
+
+        self.professor_usuario = Usuario.objects.create_user(
+            email="professor-cadastro@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
+
+        self.coordenador_usuario = Usuario.objects.create_user(
+            email="coordenador-cadastro@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.COORDENADOR,
+        )
+
+        self.professor = Professor.objects.create(
+            nome="Professor Original",
+            matricula=888001,
+            usuario=self.professor_usuario,
+        )
+
+        self.coordenador = Coordenador.objects.create(
+            nome="Coordenador Original",
+            usuario=self.coordenador_usuario,
+        )
+
+    def test_professor_pode_listar_professores(self):
+        self.client.force_authenticate(user=self.professor_usuario)
+
+        resposta = self.client.get("/api/ensalamento/professores/")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resposta.data), 1)
+
+    def test_administrador_pode_criar_professor(self):
+        self.client.force_authenticate(user=self.admin)
+
+        novo_usuario = Usuario.objects.create_user(
+            email="novo-professor@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.PROFESSOR,
+        )
+
+        resposta = self.client.post(
+            "/api/ensalamento/professores/",
+            {
+                "nome": "Novo Professor",
+                "matricula": 888002,
+                "usuario": novo_usuario.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            Professor.objects.filter(matricula=888002).exists()
+        )
+
+    def test_professor_nao_pode_criar_professor(self):
+        self.client.force_authenticate(user=self.professor_usuario)
+
+        resposta = self.client.post(
+            "/api/ensalamento/professores/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_administrador_pode_atualizar_professor(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.patch(
+            f"/api/ensalamento/professores/{self.professor.id}/",
+            {"nome": "Professor Atualizado"},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+
+        self.professor.refresh_from_db()
+        self.assertEqual(self.professor.nome, "Professor Atualizado")
+
+    def test_administrador_pode_excluir_professor(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.delete(
+            f"/api/ensalamento/professores/{self.professor.id}/",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Professor.objects.filter(id=self.professor.id).exists()
+        )
+
+    def test_coordenador_pode_listar_coordenadores(self):
+        self.client.force_authenticate(user=self.coordenador_usuario)
+
+        resposta = self.client.get("/api/ensalamento/coordenadores/")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resposta.data), 1)
+
+    def test_administrador_pode_criar_coordenador(self):
+        self.client.force_authenticate(user=self.admin)
+
+        novo_usuario = Usuario.objects.create_user(
+            email="novo-coordenador@teste.com",
+            password="SenhaForte@123456",
+            tipo=Usuario.TipoUsuario.COORDENADOR,
+        )
+
+        resposta = self.client.post(
+            "/api/ensalamento/coordenadores/",
+            {
+                "nome": "Novo Coordenador",
+                "usuario": novo_usuario.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            Coordenador.objects.filter(nome="Novo Coordenador").exists()
+        )
+
+    def test_administrador_pode_atualizar_coordenador(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.patch(
+            f"/api/ensalamento/coordenadores/{self.coordenador.id}/",
+            {"nome": "Coordenador Atualizado"},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+
+        self.coordenador.refresh_from_db()
+        self.assertEqual(self.coordenador.nome, "Coordenador Atualizado")
+
+    def test_administrador_pode_excluir_coordenador(self):
+        self.client.force_authenticate(user=self.admin)
+
+        resposta = self.client.delete(
+            f"/api/ensalamento/coordenadores/{self.coordenador.id}/",
+        )
+
+        self.assertEqual(
+            resposta.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Coordenador.objects.filter(id=self.coordenador.id).exists()
+        )

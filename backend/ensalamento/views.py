@@ -19,11 +19,13 @@ from rest_framework.views import APIView
 
 from .models import (
     Alocacao,
+    Coordenador,
     Disciplina,
     Historico,
     Horario,
     NecessitaDe,
     Possui,
+    Professor,
     Recurso,
     Sala,
     Semestre,
@@ -41,6 +43,8 @@ from .serializers import (
     HorarioSerializer,
     NecessitaDeSerializer,
     PossuiSerializer,
+    ProfessorSerializer,
+    CoordenadorSerializer,
     RecursoSerializer,
     SalaSerializer,
     SemestreSerializer,
@@ -473,3 +477,38 @@ class PainelView(APIView):
             "atualizado_em": agora.isoformat(),
             "aulas": aulas,
         })
+    
+# ============================================================
+# PROFESSORES
+# ============================================================
+@extend_schema(tags=["Professores"])
+class ProfessorListCreateView(generics.ListCreateAPIView):
+    queryset = Professor.objects.all().order_by("nome")
+    serializer_class = ProfessorSerializer
+    permission_classes = [PodeConsultarGerenciarCadastros]
+
+
+@extend_schema(tags=["Professores"])
+class ProfessorDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Professor.objects.all()
+    serializer_class = ProfessorSerializer
+    permission_classes = [PodeConsultarGerenciarCadastros]
+
+
+# ============================================================
+# COORDENADORES
+# ============================================================
+
+@extend_schema(tags=["Coordenadores"])
+class CoordenadorListCreateView(generics.ListCreateAPIView):
+    queryset = Coordenador.objects.all().order_by("nome")
+    serializer_class = CoordenadorSerializer
+    permission_classes = [PodeConsultarGerenciarCadastros]
+
+
+@extend_schema(tags=["Coordenadores"])
+class CoordenadorDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Coordenador.objects.all()
+    serializer_class = CoordenadorSerializer
+    permission_classes = [PodeConsultarGerenciarCadastros]
+    
