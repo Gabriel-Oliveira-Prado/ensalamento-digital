@@ -8,22 +8,27 @@ type User = {
 
 interface AuthStore {
     user: User | null;
-    token: string | null;
-    login: (user: User, token: string) => void;
+    access: string | null;
+    refresh: string | null;
+    login: (user: User, token: string, refresh: string) => void;
     logout: () => void;
 }
 
-const currentToken = localStorage.getItem("token");
+const currentAccess = localStorage.getItem("access");
+const currentRefresh = localStorage.getItem("refresh");
 
 export const useAuthStore = create<AuthStore>((set) => ({
     user: null,
-    token: currentToken || null,
-    login: (user, token) => {
-        localStorage.setItem("token", token);
-        set({ user, token });
+    access: currentAccess || null,
+    refresh: currentRefresh || null,
+    login: (user, access, refresh) => {
+        localStorage.setItem("access", access);
+        localStorage.setItem("refresh", refresh);
+        set({ user, access, refresh });
     },
     logout: () => {
-        localStorage.removeItem("token");
-        set({ user: null, token: null });
+        localStorage.removeItem("access");
+        localStorage.removeItem("refresh");
+        set({ user: null, access: null, refresh: null });
     },
 }));
